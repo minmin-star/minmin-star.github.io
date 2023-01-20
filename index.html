@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Live Gesture</title>
+        <link rel="stylesheet" href="./shared/style.css">
+       
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+    </head>
+
+    <body>
+        <div class="container">
+          <div id="room-enter">
+            <h1 class="heading"><font color="white">LiveGesture Room Enter</font></h1>
+            <div class="enter">
+                <div><input type="text" placeholder="Room Name" id="js-room-id"></div>
+                <div><input type="text" placeholder="YOUR NAME" id="js-your-name"></div>
+                <div><button id="js-join-trigger">Join</button></div>
+            </div>
+          </div>
+          
+          <div id="room-join"  style="display:none;">
+            <h1 class="heading"><font color="white">Room example</font></h1>
+            <div class="room">
+              <div>
+                <video id="videoTag"></video>
+                <canvas class ="effect_image"></canvas>
+                <button id="js-leave-trigger">Leave</button>
+              </div>
+              <div class="remote-streams" id="js-remote-streams"></div>
+            </div>
+          </div>
+        </div>
+          <script src="//cdn.webrtc.ecl.ntt.com/skyway-4.4.5.js"></script>
+          <script src="./shared/key.js"></script>
+          <script src="./main.js"></script>      
+    </body>
+</html>
