@@ -263,7 +263,7 @@ function draw(){
  
   drawHands(); 
 
-  //myStream = myCanvas.elt.captureStream(frameRate());
+  myStream = myCanvas.elt.captureStream(frameRate());
 
 }
 
