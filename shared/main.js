@@ -1,5 +1,23 @@
 "use strict";
 
+//ログインページアニメーション
+$( ".input" ).focusin(function() {
+  $( this ).find( "span" ).animate({"opacity":"0"}, 200);
+});
+
+$( ".input" ).focusout(function() {
+  $( this ).find( "span" ).animate({"opacity":"1"}, 300);
+});
+
+//ローディングアニメーション
+$(function(){
+
+  //ページの読み込みが完了してなくても5秒後にアニメーションを非表示にする
+  setTimeout(function(){
+    $('.loader-bg').fadeOut(600);
+  },5000);
+});
+
 //色初期化
 let r = 255, g = 255, b = 255;
 
@@ -9,17 +27,41 @@ const isFlipped = true;
 
 //自身のストリーム＆キャンバス
 let myStream;
-let myCanvas;
+var Canvas;
+let lay, roomCanvas, myCanvas;
+let roomwidth, roomheight;
+
+//ルームに入ったかどうか
+let roomFlag = false;
+
+//数字のフラッグ
+let numberFlag = false;
+
+//ユーザーの位置
+let user_x, user_y;
+
+//部屋
+let roomnumber, remoteRoom, myRoom;
+let number, receiveNumber;
 
 //HTMLのID
 const joinTrigger = document.getElementById('js-join-trigger');
-const leaveTrigger = document.getElementById('js-leave-trigger');
 const remoteVideos = document.getElementById('js-remote-streams');
 const roomId = document.getElementById('js-room-id');
 const yourName = document.getElementById('js-your-name');
 const roomEnter = document.getElementById('room-enter');
 const roomJoin = document.getElementById('room-join');
-let efimg = document.querySelector("canvas.effect_image");
+const roomIn = document.getElementById("room-in");
+const header = document.getElementById("header");
+const roomLeave = document.getElementById("leave-room");
+const enterRoom = document.getElementById("enter-room");
+let cav = document.getElementById("canvas");
+let liveRoom = document.getElementById("live-room");
+let user = document.getElementById("user");
+
+let layer01 = document.getElementById('layer');
+
+
 
 //ビデオ入力
 const localVideo = document.getElementById("videoTag"),
@@ -44,6 +86,13 @@ let keypointsHand = [];
 //左手右手
 let keyHandness = [];
 
+//人物の配列
+let participant = [];
+let participantwNum = 4;
+let participanthNum = 3;
+let artist = [];
+let artistNum = 3;
+
 //ハート
 var heart = [];
 var NUM_OF_HEARTS = 15;
@@ -52,6 +101,8 @@ var NUM_OF_HEARTS = 15;
 let fw = [];
 let colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ff00ff', '#ffffff'];
 var NUM_OF_FIRE = 10;
+
+let artistFlag = false;
 
 //桜
 var sakuraNum = 100;
@@ -63,10 +114,9 @@ var mus = [];
 var dots =  [];
 var count = 20;
 var noiseval = 0.01;
-/*
-//背景の色初期化
-let re, gr, bl, blur, colnum;
-*/
+
+//炎
+let system;
 
 //片手のフラッグ
 let flag_one ={
@@ -119,6 +169,7 @@ let Two_Red,Two_White,Two_Blue,Two_Green,Two_Yellow;
 let clapImage;
 
 let t = 0;
+let c = 0;
 
 //画像読み込み先
 function preload(){
@@ -142,21 +193,40 @@ function preload(){
 /////////////////////////////////////////固定///////////////////////////////////////////////
 async function setup(){
 
-  myCanvas = createCanvas(320,180);
-  efimg = createGraphics(640, 360);
+  //デフォルトのキャンバス消去
+  Canvas = createCanvas(320,180);
+  Canvas.parent(cav);
+  Canvas.style("display","none");
 
-  efimg.position(0,150);
-  efimg.style("display","");
+  //映像
+  lay = createGraphics(160, 90);
+  lay.parent(layer01);
+  lay.style("display", "");
+  lay.id('mylayer');
+  
+  roomwidth = windowWidth;
+  roomheight = windowHeight;
 
-//出力
-const camera = new Camera(localVideo, {
-  onFrame: async () => {
-    await hands.send({ image: localVideo });
-  },
-  width: 640,
-  height: 360,
-});
-camera.start();
+  //ルームのレイヤー
+  roomCanvas = createGraphics(roomwidth, roomheight);
+  roomCanvas.parent(liveRoom);
+  roomCanvas.style("display","");
+
+  //ユーザのレイヤー
+  myCanvas = createGraphics(roomwidth/5,roomheight/4);
+  myCanvas.parent(user);
+  myCanvas.position(30, 30);
+  myCanvas.style("display","");
+
+  //出力
+  const camera = new Camera(localVideo, {
+    onFrame: async () => {
+      await hands.send({ image: localVideo });
+    },
+    width: 320,
+    height: 180,
+  });
+  camera.start();
 
   // eslint-disable-next-line require-atomic-updates
   const peer = (window.peer = new Peer({
@@ -164,69 +234,168 @@ camera.start();
     debug: 3,
   }));
 
-  // Register join handler
+  // ログイン(JOIN)ボタンを押したとき
   joinTrigger.addEventListener('click', () => {
+    //ルームに移動
+    roomEnter.style.display ="none";
+    roomIn.style.display ="block";
+
+    header.textContent = roomId.value + "'s Room";
     // Note that you need to ensure the peer has connected to signaling server
     // before using methods of peer instance.
     if (!peer.open) {
       return;
+    }    
+  });
+      
+  //部屋から離れるを押したとき
+  roomLeave.addEventListener('click', () => {
+    //参加画面に戻る
+    roomIn.style.display = "none";
+    roomEnter.style.display = "block";
+  });
+
+
+  //部屋に入るを押したとき
+  enterRoom.addEventListener('click', () => {
+
+    //入ったことを示す
+    roomFlag = true;  
+    //ユーザーがどこの位置にいるか
+    if( 55 <= user_x && user_x <= 90 && 110 <= user_y && user_y <= 170){
+      number = 0;
+    }
+    else if(55+(roomwidth/5)<= user_x && user_x <= 90+(roomwidth/5) && 110 <= user_y && user_y <= 170 ){
+      number = 1;
+    }
+    else if(55+(roomwidth*2/5)<= user_x && user_x <= 90+(roomwidth*2/5) && 110 <= user_y && user_y <= 170 ){
+      number = 2;
+    }
+    else if(55+(roomwidth*3/5)<= user_x && user_x <= 90+(roomwidth*3/5) && 110 <= user_y && user_y <= 170 ){
+      number = 3;
+    }
+    else if( 55 <= user_x && user_x <= 90 && 110+(roomheight/4) <= user_y && user_y <= 170+(roomheight/4)){
+      number = 4;
+    }
+    else if(55+(roomwidth/5)<= user_x && user_x <= 90+(roomwidth/5) && 110+(roomheight/4) <= user_y && user_y <= 170+(roomheight/4) ){
+      number = 5;
+    }
+    else if(55+(roomwidth*2/5)<= user_x && user_x <= 90+(roomwidth*2/5) && 110+(roomheight/4) <= user_y && user_y <= 170+(roomheight/4) ){
+      number = 6;
+    }
+    else if(55+(roomwidth*3/5)<= user_x && user_x <= 90+(roomwidth*3/5) && 110+(roomheight/4) <= user_y && user_y <= 170+(roomheight/4) ){
+      number = 7;
+    }
+    else if( 55 <= user_x && user_x <= 90 && 110+(roomheight/2) <= user_y && user_y <= 170+(roomheight/2)){
+      number = 8;
+    }
+    else if(55+(roomwidth/5)<= user_x && user_x <= 90+(roomwidth/5) && 110+(roomheight/2) <= user_y && user_y <= 170+(roomheight/2) ){
+      number = 9;
+    }
+    else if(55+(roomwidth*2/5)<= user_x && user_x <= 90+(roomwidth*2/5) && 110+(roomheight/2) <= user_y && user_y <= 170+(roomheight/2) ){
+      number = 10;
+    }
+    else if(55+(roomwidth*3/5)<= user_x && user_x <= 90+(roomwidth*3/5) && 110+(roomheight/2) <= user_y && user_y <= 170+(roomheight/2) ){
+      number = 11;
+    }
+    //アーティスト側
+    else if( 85 <= user_x && user_x <= 120 && 110+(roomheight*3/4) <= user_y && user_y <= 170+(roomheight*3/4)){
+      number = 12;
+    }
+    else if( 85+(roomwidth/5) <= user_x && user_x <= 120+(roomwidth/5) && 110+(roomheight*3/4) <= user_y && user_y <= 170+(roomheight*3/4)){
+      number = 13;
+    }
+    else if( 85+(roomwidth*2/5) <= user_x && user_x <= 120+(roomwidth*2/5) && 110+(roomheight*3/4) <= user_y && user_y <= 170+(roomheight*3/4)){
+      number = 14;
+    }
+    else{
+      number = 120;
     }
 
-    roomEnter.style.display ="none";
-    roomJoin.style.display ="block";
+    //自分の位置
+    if( 0 <= number && number <= 11){
+      roomnumber = "remote0" + String(number);
+      myRoom = document.getElementById(roomnumber);
+      myRoom.append(layer01);
+    }else if( 12 <= number && number <= 14){
+      artistFlag=true;
+      layer01.style.display = "none";
+    }else{
+      alert('そこに場所はありません');
+      roomIn.style.display = "block";
+      roomJoin.style.display = "none";
+    }
 
-    const room = peer.joinRoom(roomId.value, {
-      mode: 'sfu',
-      stream: myStream,
-    });
+    for(let x = 0; x < localStorage.length; x++){
+      const key = localStorage.key(x);
+      const num = localStorage.getItem(key);
+      console.log(num + ","+ number);
+      if( num == number){
+        numberFlag = true;
+      }
+    };
+    if(numberFlag){
+      alert("その場所は既に取られてしまいました...。");
+      roomIn.style.display = "block";
+      roomJoin.style.display = "none";
+      numberFlag= false;
+    }
+    else{
+        const room = peer.joinRoom(roomId.value, {
+        mode: 'sfu',
+        stream: myStream,
+      });
 
-    room.once('open', () => {
-      console.log('=== You joined ===\n');
-    });
-    room.on('peerJoin', () => {
-      console.log(`=== ${yourName.value} joined ===\n`);
-    });
+      room.on('open', () =>{
+        localStorage.setItem(peer.id, number);
+      });
 
-    // Render remote stream for new peer join in the room
-    room.on('stream', async stream => {
-      const newVideo = document.createElement('video');
-      newVideo.srcObject = stream;
-      newVideo.playsInline = true;
-      // mark peerId to find it later at peerLeave event
-      remoteVideos.append(newVideo);
-      await newVideo.play().catch(console.error);
-    });
+      roomIn.style.display = "none";
+      roomJoin.style.display = "block";
+    
+      // Render remote stream for new peer join in the room
+      room.on('stream', async stream => {
+        receiveNumber = localStorage.getItem(stream.peerId);
+        if(0 <= receiveNumber && receiveNumber <=11){   
+          roomnumber = "remote0"+ String(receiveNumber);
+          remoteRoom = document.getElementById(roomnumber);
+        }
+        const newVideo = document.createElement('video');
+        newVideo.srcObject = stream;
+        newVideo.playsInline = true;
+        // mark peerId to find it later at peerLeave event
+        remoteRoom.append(newVideo);
+        await newVideo.play().catch(console.error);
+      });
 
-    // for closing room members
-    room.on('peerLeave', peerId => {
-      const remoteVideo = remoteVideos.querySelector(
-        `[data-peer-id="${peerId}"]`
-      );
-      remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-      remoteVideo.srcObject = null;
-      remoteVideo.remove();
-    });
-
-    // for closing myself
-    room.once('close', () => {
-      Array.from(remoteVideos.children).forEach(remoteVideo => {
+      // for closing room members
+      room.on('peerLeave', peerId => {
+        const remoteVideo = remoteRoom.querySelector(
+          `[data-peer-id="${peerId}"]`
+        );
         remoteVideo.srcObject.getTracks().forEach(track => track.stop());
         remoteVideo.srcObject = null;
         remoteVideo.remove();
       });
-    });
 
-    leaveTrigger.addEventListener('click', () => {
-      room.close() , { once: true };
-      
-      roomJoin.style.display ="none";
-      roomEnter.style.display ="block";
-    });
-    
 
+      // for closing myself
+      room.once('close', () => {
+        Array.from(remoteRoom.children).forEach(remoteVideo => {
+          remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+          remoteVideo.srcObject = null;
+          remoteVideo.remove();
+        });
+      });
+    }
   });
 
   peer.on('error', console.error);
+
+  window.addEventListener('beforeunload', () => {
+    peer.destroy();
+    localStorage.removeItem(peer.id);
+  });
 
   //ハート
   for( let i = 0; i < NUM_OF_HEARTS; i++){
@@ -254,16 +423,99 @@ camera.start();
   for(var i = 0; i < count; i++){
     dots[i].initMe();
   }
+
+  //炎
+  system = new ParticleSystem(createVector(200,200));
+
+
+  //人物
+  for( var i = 0; i < participantwNum; i++ ){
+    for (var j = 0; j < participanthNum; j++){  
+      if( 0 < localStorage.length ){
+        for(var x = 0; x < localStorage.length; x++){
+          const key = localStorage.key(x);
+          const num = localStorage.getItem(key);
+          if( c == num){
+            participant.push(new human((roomwidth/5)*i, (roomheight/4)*j, 150));
+          }
+          else{
+            participant.push(new human((roomwidth/5)*i, (roomheight/4)*j, 240));
+          }
+          c++;
+        }
+      }
+      else{
+        participant.push(new human((roomwidth/5)*i, (roomheight/4)*j, 240));
+      }
+    }
+  }
+  c = 0;
+  for( var i = 0; i < artistNum; i++){
+    artist.push(new human((roomwidth/5)*i+30, roomheight*3/4, 150));
+  }
+
+
 }
 
 /////////////////////////////////////ループ//////////////////////////////////////////
 function draw(){
-  clear();
-  background("rgba(255, 255, 255, 0.2)");
- 
+  Canvas.clear();
+  myCanvas.clear();
+  Canvas.background("rgba(0, 0, 0, 0.2)");
+  lay.background(200);
+
+  //ルームの背景画面作成
+  roomCanvas.background("rgba(100, 100, 100, 0.8)")
+  for( var i = 0; i < participanthNum*participantwNum; i++){
+    participant[i].show();
+  }
+  for( var i = 0; i < artistNum; i++ ){
+    artist[i].show();
+  }
+
+  //サイズ変更
+  if(!roomFlag){
+  //座標をスタックに保存
+  push();
+  if (isFlipped) {
+    translate(width, 0); //表示ウィンドウ内の移動する量translate(x,y)移動 ループが再び始まると変換はリセット
+    scale(-1, 1);//頂点を拡大及び縮小 scale(x,y)⇒反転している？
+  }
+  displayWidth = width;
+  displayHeight = (width * lay.height) / lay.width;
+  //前の座標を復元(pop以降の設定項目リセット)
+  pop();
+  }
+  else{    
+    push();
+    displayWidth = layer01.clientWidth;
+    displayHeight = (layer01.clientWidth*9)/16
+    pop();
+    lay.resizeCanvas(displayWidth, displayHeight);
+  }
+
+  //自分のアイコン
+  myCanvas.push();
+  myCanvas.fill(255, 154, 136);
+  myCanvas.noStroke();
+  myCanvas.ellipse( 50, 50, 100/3, 100/3);
+  //ellipse( this.w/2, this.h/3, this.w/3, this.w/3);
+  myCanvas.triangle( 50, 50, 100/3, 100, 200/3, 100);
+  //triangle( this.w/2, this.h/3, this.w/3, this.h*2/3, this.w*2/3 , this.h*2/3);
+  myCanvas.fill(255, 255, 255);
+  myCanvas.textAlign(CENTER);
+  myCanvas.text(yourName.value, 12,44,80,15);
+  myCanvas.pop();
+
+
   drawHands(); 
 
-  myStream = myCanvas.elt.captureStream(frameRate());
+  if(!artistFlag){
+     myStream = lay.elt.captureStream(frameRate());
+  }
+  else{
+    myStream = null;
+  }
 
 }
 
@@ -271,10 +523,8 @@ function draw(){
 //----------------------------------------------------------------------------------------------------------------------------------------//
 function drawHands(){
 
-  push();
-  displayWidth = width;
-  displayHeight = (width * myCanvas.height) /myCanvas.width;
-  pop();
+  lay.clear();
+ 
   //手を検出しなかった時リターンする
   if(keypointsHand.length <= 0) return;
 
@@ -330,36 +580,34 @@ function drawHands(){
       
             //拍手した時
             if (palmarea.wt > 0.18){
-              efimg.clear();
               penlight(tip.index, displayWidth, displayHeight);
             }
             if(palmarea.wt < 0.10){
               if( frameCount % 7 == 0 || frameCount % 7 == 1 || frameCount % 7 == 2){
-                efimg.clear();
 
-                push();
-                rotate(PI/4);
-                translate(displayWidth/3, -displayHeight*4/3);
+                lay.push();
+                lay.rotate(PI/4);
+                lay.translate(displayWidth/3, -displayHeight*4/3);
                 efCurve(random()*(displayWidth/2),random()*(displayHeight/2), random()*(100-40)+40, random()*(40-10)+10, 5);
                 //efThree(random()*(displayWidth/2),random()*(displayHeight/2), random()*(100-40)+40, random()*(40-20)+20);
-                pop()
+                lay.pop()
 
-                push()
-                rotate(5*PI/4);
-                translate(-(displayWidth*3/4), -displayHeight*3/4);
+                lay.push()
+                lay.rotate(5*PI/4);
+                lay.translate(-(displayWidth*3/4), -displayHeight*3/4);
                 efCurve(random()*(displayWidth/2),random()*(displayHeight/2), random()*(100-40)+40, random()*(40-10)+10, 5);
                 //efThree(random()*(displayWidth/2),random()*(displayHeight/2), random()*(100-40)+40, random()*(40-20)+20);
-                pop();
+                lay.pop();
 
-                push();                           
-                image(
+                lay.push();                           
+                lay.image(
                   clapImage,
                   random()*displayWidth,
                   random()*displayHeight,
                   imagePNG.width*0.10,
                   imagePNG.height*0.10
                 );
-                pop();
+                lay.pop();
               }
             }
           }
@@ -367,8 +615,8 @@ function drawHands(){
           //ピースの時
           //キラキラ
           if(flag_one.thumb == false && flag_one.index == true && flag_one.middle == true && flag_one.ring == false && flag_one.pinky == false ){
-            efimg.clear();
-            Star(random()*displayWidth,random()*displayHeight,random()*10)
+            Star(random()*lay.width,random()*lay.height,random()*10)
+
           }
         
           //親指を上げている
@@ -377,7 +625,6 @@ function drawHands(){
             //いいねのポーズ
             //花火
             if( tip.thumb.y - tip.middle.y  < 0){                 
-              efimg.clear();
               for(let f of fw){
               f.run();
             }
@@ -386,13 +633,13 @@ function drawHands(){
             //ブーイング
             //桜
             else{
-              efimg.clear();
+              system.addParticle();
+              system.run();
             }
           }
     
           //メロイックサイン
           if(flag_one.thumb == false && flag_one.index == true && flag_one.middle == false && flag_one.ring == false && flag_one.pinky == true ){
-              efimg.clear();
               for( var i = 0; i < count; i++){
                 dots[i].drawMe();
                 dots[i].updateMe();
@@ -474,7 +721,6 @@ function drawHands(){
           
               //両手でハートを作った時の処理
                   if(0.20 <= dist(tip_l.thumb.x, tip_l.thumb.y, tip_l.pinky.x, tip_l.pinky.y) <= 0.3 && 0.20 <= dist(tip_r.thumb.x, tip_r.thumb.y, tip_r.pinky.x, tip_r.pinky.y) <= 0.3){
-                      efimg.clear();
                       for( let b of heart){
                           b.move();
                           b.show();
@@ -483,7 +729,6 @@ function drawHands(){
               //丸の時
               //桜
                   else{
-                    efimg.clear();
                     for(let i = 0; i < sakuraNum; i++){
                       fubuki[i].draw();
                       fubuki[i].move();
@@ -499,93 +744,92 @@ function drawHands(){
 //---------------------------------------------------------------------------------------------------------------------------------------//
   //ダイヤ描画
   function drawTwinkle( x, y, r){
-    push();
-    translate(x,y);
+    lay.push();
+    lay.translate(x,y);
 
-    beginShape();
+    lay.beginShape();
     for(let theta = 0; theta < 360; theta++){
-    vertex(r * pow(cos(theta), 3), r * 1.4 * pow(sin(theta), 3));
+    lay.vertex(r * pow(cos(theta), 3), r * 1.4 * pow(sin(theta), 3));
     }
-    endShape(CLOSE)
-    pop();
+    lay.endShape(CLOSE)
+    lay.pop();
   }
   //効果線-曲線
   function efCurve( x0, y0, w, h, a){
 
-    push();
+    lay.push();
 
-    noFill();
-    strokeWeight(3);
-    stroke(255);
+    lay.noFill();
+    lay.strokeWeight(3);
+    lay.stroke(255);
     
-    bezier(x0,       y0+h,   x0+a,     y0+h,     x0+ w/3,    y0+h/5+a, x0+w/3,   y0+h/5);
-    bezier(x0+w/3,   y0+h/5, x0+w/3+a, y0+h/5+a, x0+w*2/3-a, y0+h/5+a, x0+w*2/3, y0+h/5);
-    bezier(x0+w*2/3, y0+h/5, x0+w*2/3, y0+h/5+a, x0+w-a,     y0+h,     x0+w,     y0+h);
+    lay.bezier(x0,       y0+h,   x0+a,     y0+h,     x0+ w/3,    y0+h/5+a, x0+w/3,   y0+h/5);
+    lay.bezier(x0+w/3,   y0+h/5, x0+w/3+a, y0+h/5+a, x0+w*2/3-a, y0+h/5+a, x0+w*2/3, y0+h/5);
+    lay.bezier(x0+w*2/3, y0+h/5, x0+w*2/3, y0+h/5+a, x0+w-a,     y0+h,     x0+w,     y0+h);
 
-    pop();
+    lay.pop();
   }
   //効果線-直線
   function efThree(x0, y0, w, h){
 
-    push();
+    lay.push();
 
-    noFill();
-    strokeWeight(3);
-    stroke(255);
+    lay.noFill();
+    lay.strokeWeight(3);
+    lay.stroke(255);
 
-    line(x0,     y0+h/2, x0+w/4,   y0+h);
-    line(x0+w/2, y0,     x0+w/2,   y0+h);
-    line(x0+w,   y0+h/2, x0+3*w/4, y0+h);
+    lay.line(x0,     y0+h/2, x0+w/4,   y0+h);
+    lay.line(x0+w/2, y0,     x0+w/2,   y0+h);
+    lay.line(x0+w,   y0+h/2, x0+3*w/4, y0+h);
 
-    pop();
+    lay.pop();
   }
 
 
   //キラキラさせる
   function Star( x, y, r){
-    push();
+    lay.push();
 
-    drawingContext.shadowBlur = 30;
-    drawingContext.shadowColor = color(255);
+    lay.drawingContext.shadowBlur = 30;
+    lay.drawingContext.shadowColor = color(255,255,random(255));
 
-    noFill();
-    strokeWeight(5);
-    stroke(255);
+    lay.strokeWeight(3);
+    lay.stroke(255);
     drawTwinkle(x,y,r);
-    pop();
+    lay.pop();
 
   }
 
   //ペンライトの動き
   function penlight(position, w, h){
-    push();
+    lay.push();
 
-    drawingContext.shadowBlur = 30;
-    drawingContext.shadowColor= color(r, g, b)
+    lay.drawingContext.shadowBlur = 30;
+    lay.drawingContext.shadowColor= color(r, g, b)
     //fill(255
-    noStroke();
-    fill(255);
-    ellipse(position.x * w, position.y * h, 30 );
-    pop();
+    lay.noStroke();
+    lay.fill(255);
+    lay.ellipse(position.x * w, position.y * h, 30 );
+    lay.pop();
   }
 
   function penlight_remain(position){
-    push();
+    lay.push();
     let T, A, R;
     //drawingContext.shadowBlur = 25;
     //drawingContext.shadowColor= color(r, g, b)
     //fill(255);
     t+=.001
-    efimg.colorMode(HSB);
-    efimg.blendMode(BLEND);
-    efimg.background(0, .1);
-    efimg.noStroke();
-    efimg.blendMode(ADD);
+    lay.colorMode(HSB);
+    lay.blendMode(BLEND);
+    lay.background(0, .1);
+    lay.noStroke();
+    lay.blendMode(ADD);
     for( let a = 0; a < 3; a+=.005){
-      efimg.fill(a*60,g,b, T=tan(a*4+t*9)/2);
-      efimg.circle(cos(R=a*a-t)*360*sin(A=a+t*3+sin(R+t))+360,sin(R)*360*cos(A)+360,4/T);
+      lay.fill(a*60,g,b, T=tan(a*4+t*9)/2);
+      lay.circle(cos(R=a*a-t)*360*sin(A=a+t*3+sin(R+t))+360,sin(R)*360*cos(A)+360,4/T);
     }
-    pop();
+    lay.pop();
   }
 
 
@@ -609,21 +853,40 @@ class Hearts{
   }
 
   show(){
-    push();
-    imageMode(CENTER);
+    lay.push();
+    lay.imageMode(CENTER);
     //tint(255,100);
-    image(
+    lay.image(
       imagePNG,
       this.x,
       this.y,
       imagePNG.width*0.10,
       imagePNG.height*0.10
     );
-    pop();
+    lay.pop();
   }
 
   isOffScreen(){
     return this.y < 0;
+  }
+}
+
+class human{
+  constructor(vx, vy, color){
+    this.x = 10 + vx;
+    this.y = 10 + vy;
+    this.w = 100;
+    this.h = 150;
+    this.c = color;
+  }
+
+  show(){
+    roomCanvas.push();
+    roomCanvas.noStroke();
+    roomCanvas.fill(this.c);
+    roomCanvas.ellipse( this.w/2+this.x, this.h/3+this.y, this.w/3, this.w/3);
+    roomCanvas.triangle( this.w/2+this.x, this.h/3+this.y, this.w/3+this.x, this.h*2/3+this.y, this.w*2/3+this.x, this.h*2/3+this.y);
+    roomCanvas.pop();
   }
 }
 
@@ -640,31 +903,31 @@ class Fire{
 	}
 
 	show(){
-		push();
-    drawingContext.shadowBlur = 20;
-    drawingContext.shadowColor= this.col;
-		translate(this.x, this.y);
-		rotate(this.ang);
-		stroke(this.col);
+		lay.push();
+    lay.drawingContext.shadowBlur = 20;
+    lay.drawingContext.shadowColor= this.col;
+		lay.translate(this.x, this.y);
+		lay.rotate(this.ang);
+		lay.stroke(this.col);
 		for(let i=0; i<this.num; i++){
-			rotate(TAU/this.num);
-			stroke(this.col);
-			strokeWeight(2);
-			line(this.p1, 0, this.p2, 0);
-			stroke(255);
-			strokeWeight(1);
-			line(this.p1, 0, this.p2, 0);	
+			lay.rotate(TAU/this.num);
+			lay.stroke(this.col);
+			lay.strokeWeight(2);
+			lay.line(this.p1, 0, this.p2, 0);
+			lay.stroke(255);
+			lay.strokeWeight(1);
+			lay.line(this.p1, 0, this.p2, 0);	
 		}
-		pop();
+		lay.pop();
 	}
 
 	move(){
 		this.life--;
 
 		if(this.lifeSpan > this.life && this.life > 0){
-			let nrm = norm(this.life, this.lifeSpan, 1);
-			this.p1 = lerp(0, this.s/2, nrm**0.8);
-			this.p2 = lerp(0, this.s/2, nrm**2);
+			let nrm = lay.norm(this.life, this.lifeSpan, 1);
+			this.p1 = lay.lerp(0, this.s/2, nrm**0.8);
+			this.p2 = lay.lerp(0, this.s/2, nrm**2);
 			this.y += 0.5;
 			this.ang += this.aStep;
 		}
@@ -713,13 +976,13 @@ class Sakura {
       this.c = floor(random(3));
   
       this.draw = function () {
-        fill(clr[this.c]);
+        lay.fill(clr[this.c]);
   
-        push();
-        noStroke();
-        translate(this.ox, this.oy);
-        rotate(radians(this.rotateT));
-        beginShape();
+        lay.push();
+        lay.noStroke();
+        lay.translate(this.ox, this.oy);
+        lay.rotate(radians(this.rotateT));
+        lay.beginShape();
         for (var t = 0; t < 360 / 4; t++) {
           A = n / PI * radians(t);
   
@@ -732,10 +995,10 @@ class Sakura {
           x = this.size * R * cos(radians(t));
           y = this.size * this.sizeYScale * R * sin(radians(t));
   
-          vertex(x, y);
+          lay.vertex(x, y);
         }
-        endShape(CLOSE);
-        pop();
+        lay.endShape(CLOSE);
+        lay.pop();
       };
   
       this.move = function () {
@@ -800,12 +1063,129 @@ function pointinit(){
     this.rotAngle += this.rotSpeed;
   }
   ShowObj.prototype.drawMe = function () {
-    push();
-    translate(this.x, this.y);
-    rotate(radians(this.rotAngle));
-    scale(this.sizeScale, this.sizeScale);
+    lay.push();
+    lay.translate(this.x, this.y);
+    lay.rotate(radians(this.rotAngle));
+    lay.scale(this.sizeScale, this.sizeScale);
     //tint(255, 30);
-    image(mus[this.imgCol], -(mus[this.imgCol].width / 2), -(mus[this.imgCol].height / 2));
-    pop();
+    lay.image(mus[this.imgCol], -(mus[this.imgCol].width / 2), -(mus[this.imgCol].height / 2));
+    lay.pop();
   }
-  
+   
+//炎
+let Particle = function(position){
+  //加速度
+  this.acceleration = createVector(0, -0.35);
+  this.velocity = createVector(random(-0.3, 0.3), random(-0.3, 0.3));
+  this.position = position.copy();
+  //薄さ
+  this.lifespan = 355;
+  this.green = 220;
+  this.size = 30;
+}
+
+Particle.prototype.run = function() {
+  this.update();
+  this.display();
+};
+
+// Method to update position
+Particle.prototype.update = function(){
+  this.velocity.add(this.acceleration);
+  this.position.add(this.velocity);
+  this.lifespan -= 1;
+  this.green -= 4;
+  this.size -= 1;
+};
+
+// Method to display
+Particle.prototype.display = function() {
+  lay.push();
+  lay.drawingContext.shadowBlur = 35;
+  lay.drawingContext.shadowColor = color(255, this.green, 20)
+  lay.stroke(255,this.green,20, this.lifespan);
+  lay.strokeWeight(1);
+  lay.fill(255,this.green,20, this.lifespan);
+  lay.ellipse(this.position.x, this.position.y, this.size, this.size);
+  lay.pop();
+};
+
+// Is the particle still useful?
+Particle.prototype.isDead = function(){
+  return this.lifespan < 0;
+};
+
+Particle.prototype.leadDead = function(){
+  return this.size < 0;
+};
+
+let ParticleSystem = function(position) {
+  this.origin = position.copy();
+  this.particles = [];
+};
+
+ParticleSystem.prototype.addParticle = function() {
+  this.particles.push(new Particle(this.origin));
+};
+
+ParticleSystem.prototype.run = function() {
+  for (let i = this.particles.length-1; i >= 0; i--) {
+    let p = this.particles[i];
+    p.run();
+    if (p.isDead()) {
+      this.particles.splice(i, 1);
+    }
+    if(p.leadDead()){
+      this.particles.splice(i, 1);
+    }
+  }
+};
+
+//ビデオ移動
+
+let dropJudge = null;
+
+const layer02 = document.getElementById("user");
+
+layer02.onmousedown = function(event){
+
+  layer02.style.cursor = 'grabbing';
+
+  let shiftX = event.clientX - layer02.getBoundingClientRect().left;
+  let shiftY = event.clientY - layer02.getBoundingClientRect().top;
+
+  layer02.style.position = 'absolute';
+  layer02.style.zIndex = 1000;
+
+  movePosition(event.pageX, event.pageY);
+   
+   // #box要素の位置を決める
+   function movePosition(pageX, pageY) {
+    layer02.style.left = pageX - shiftX + 'px';
+    layer02.style.top = pageY - shiftY + 'px';
+  }
+
+   // マウスを動かした時の処理
+   function mouseMove(event) {
+    movePosition(event.pageX, event.pageY);
+
+    user_x = event.pageX;
+    user_y = event.pageY;
+    layer02.hidden = true;
+    layer02.hidden = false;
+
+  }
+
+  document.addEventListener('mousemove', mouseMove);
+ 
+  // マウスを離した時にmousemoveイベントを解除する
+  document.onmouseup = function() {
+      document.removeEventListener('mousemove', mouseMove);
+      layer02.style.cursor = 'grab';
+  };
+
+};
+
+layer02.ondragstart = function() {
+  return false;
+};
