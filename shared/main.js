@@ -44,6 +44,7 @@ let user_x, user_y;
 let roomnumber, remoteRoom, myRoom;
 let number, receiveNumber;
 
+
 //HTMLのID
 const joinTrigger = document.getElementById('js-join-trigger');
 const remoteVideos = document.getElementById('js-remote-streams');
@@ -80,6 +81,9 @@ navigator.mediaDevices.getUserMedia(constraints).then(function ( stream){
 .catch( function ( err ){
   console.log(err.name + ": " + err.message);
 });
+
+//入っている数字の配列
+let in_number = [];
 
 //手の関節位置
 let keypointsHand = [];
@@ -312,81 +316,127 @@ async function setup(){
       number = 120;
     }
 
-    //自分の位置
-    if( 0 <= number && number <= 11){
-      roomnumber = "remote0" + String(number);
-      myRoom = document.getElementById(roomnumber);
-      myRoom.append(layer01);
-    }else if( 12 <= number && number <= 14){
-      artistFlag=true;
-      layer01.style.display = "none";
-    }else{
+    if( number == 120){
       alert('そこに場所はありません');
       roomIn.style.display = "block";
       roomJoin.style.display = "none";
-    }
+    }else{
 
-    for(let x = 0; x < localStorage.length; x++){
-      const key = localStorage.key(x);
-      const num = localStorage.getItem(key);
-      console.log(num + ","+ number);
-      if( num == number){
-        numberFlag = true;
-      }
-    };
-    if(numberFlag){
-      alert("その場所は既に取られてしまいました...。");
-      roomIn.style.display = "block";
-      roomJoin.style.display = "none";
-      numberFlag= false;
-    }
-    else{
-        const room = peer.joinRoom(roomId.value, {
-        mode: 'sfu',
-        stream: myStream,
-      });
-
-      room.on('open', () =>{
-        localStorage.setItem(peer.id, number);
-      });
-
-      roomIn.style.display = "none";
-      roomJoin.style.display = "block";
-    
-      // Render remote stream for new peer join in the room
-      room.on('stream', async stream => {
-        receiveNumber = localStorage.getItem(stream.peerId);
-        if(0 <= receiveNumber && receiveNumber <=11){   
-          roomnumber = "remote0"+ String(receiveNumber);
-          remoteRoom = document.getElementById(roomnumber);
+      for(let x = 0; x < localStorage.length; x++){
+        const key = localStorage.key(x);
+        const num = localStorage.getItem(key);
+        console.log(num + ","+ number);
+        if( num == number){
+          numberFlag = true;
         }
-        const newVideo = document.createElement('video');
-        newVideo.srcObject = stream;
-        newVideo.playsInline = true;
-        // mark peerId to find it later at peerLeave event
-        remoteRoom.append(newVideo);
-        await newVideo.play().catch(console.error);
-      });
+      };
+      if(numberFlag){
+        alert("その場所は既に取られてしまいました...。");
+        roomIn.style.display = "block";
+        roomJoin.style.display = "none";
+        numberFlag= false;
+      }
+      else{
+        //自分の位置
+        if( 0 <= number && number <= 11){
+          roomnumber = "remote0" + String(number);
+          myRoom = document.getElementById(roomnumber);
+          myRoom.append(layer01);
 
-      // for closing room members
-      room.on('peerLeave', peerId => {
-        const remoteVideo = remoteRoom.querySelector(
-          `[data-peer-id="${peerId}"]`
-        );
-        remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-        remoteVideo.srcObject = null;
-        remoteVideo.remove();
-      });
+          const room = peer.joinRoom(roomId.value, {
+          mode: 'sfu',
+          stream: myStream,
+          });
+
+          room.on('open', () =>{
+            localStorage.setItem(peer.id, number);
+          });
+
+          roomIn.style.display = "none";
+          roomJoin.style.display = "block";
+        
+          // Render remote stream for new peer join in the room
+          room.on('stream', async stream => {
+            receiveNumber = localStorage.getItem(stream.peerId);
+            if(0 <= receiveNumber && receiveNumber <=11){   
+              roomnumber = "remote0"+ String(receiveNumber);
+              remoteRoom = document.getElementById(roomnumber);
+            }
+            const newVideo = document.createElement('video');
+            newVideo.srcObject = stream;
+            newVideo.playsInline = true;
+            // mark peerId to find it later at peerLeave event
+            newVideo.setAttribute('data-peer-id', stream.peerId);
+            remoteRoom.append(newVideo);
+            await newVideo.play().catch(console.error);
+          });
+
+          // for closing room members
+          room.on('peerLeave', peerId => {
+            const remoteVideo = remoteRoom.querySelector(
+              `[data-peer-id="${peerId}"]`
+            );
+            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+            remoteVideo.srcObject = null;
+            remoteVideo.remove();
+            
+          });
 
 
-      // for closing myself
-      room.once('close', () => {
-        Array.from(remoteRoom.children).forEach(remoteVideo => {
-          remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-          remoteVideo.srcObject = null;
-          remoteVideo.remove();
-        });
-      });
+          // for closing myself
+          room.once('close', () => {
+            Array.from(remoteRoom.children).forEach(remoteVideo => {
+              remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+              remoteVideo.srcObject = null;
+              remoteVideo.remove();
+            });
+          });
+        }else if( 12 <= number && number <= 14){
+          //artistFlag=true;
+          layer01.style.display = "none";
+          
+          const room = peer.joinRoom(roomId.value, {
+            mode: 'sfu',
+          });
+  
+          room.on('open', () =>{
+            localStorage.setItem(peer.id, number);
+          });
+  
+          roomIn.style.display = "none";
+          roomJoin.style.display = "block";
+        
+          // Render remote stream for new peer join in the room
+          room.on('stream', async stream => {
+            receiveNumber = localStorage.getItem(stream.peerId);
+            if(0 <= receiveNumber && receiveNumber <=11){   
+              roomnumber = "remote0"+ String(receiveNumber);
+              remoteRoom = document.getElementById(roomnumber);
+            }
+            const newVideo = document.createElement('video');
+            newVideo.srcObject = stream;
+            newVideo.playsInline = true;
+            // mark peerId to find it later at peerLeave event
+            newVideo.setAttribute('data-peer-id', stream.peerId);
+            remoteRoom.append(newVideo);
+            await newVideo.play().catch(console.error);
+          });
+  
+          // for closing room members
+          room.on('peerLeave', peerId => {
+            if( 0 <= localStorage.getItem(peerId) <= 11){
+            const remoteVideo = remoteRoom.querySelector(
+              `[data-peer-id="${peerId}"]`
+            );
+            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+            remoteVideo.srcObject = null;
+            remoteVideo.remove();
+            }
+          });
+  
+        }
+        
+      }
     }
   });
 
@@ -429,27 +479,17 @@ async function setup(){
 
 
   //人物
-  for( var i = 0; i < participantwNum; i++ ){
-    for (var j = 0; j < participanthNum; j++){  
-      if( 0 < localStorage.length ){
-        for(var x = 0; x < localStorage.length; x++){
-          const key = localStorage.key(x);
-          const num = localStorage.getItem(key);
-          if( c == num){
-            participant.push(new human((roomwidth/5)*i, (roomheight/4)*j, 150));
-          }
-          else{
-            participant.push(new human((roomwidth/5)*i, (roomheight/4)*j, 240));
-          }
-          c++;
-        }
-      }
-      else{
-        participant.push(new human((roomwidth/5)*i, (roomheight/4)*j, 240));
-      }
+  for( var i = 0; i < participanthNum; i++ ){
+    for (var j = 0; j < participantwNum; j++){    
+      participant.push(new human((roomwidth/5)*j, (roomheight/4)*i, 240));
     }
   }
-  c = 0;
+  for( var x = 0; x < localStorage.length; x++){
+    const key = localStorage.key(x);
+    const num = localStorage.getItem(key);
+    participant[num].c = 120
+  }
+  
   for( var i = 0; i < artistNum; i++){
     artist.push(new human((roomwidth/5)*i+30, roomheight*3/4, 150));
   }
@@ -509,13 +549,15 @@ function draw(){
 
 
   drawHands(); 
-
+/*
   if(!artistFlag){
      myStream = lay.elt.captureStream(frameRate());
   }
   else{
     myStream = null;
   }
+  */
+  myStream = lay.elt.captureStream(frameRate());
 
 }
 
