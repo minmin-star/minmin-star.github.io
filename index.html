@@ -12,6 +12,7 @@
         <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://kit.fontawesome.com/e9f91402ff.js" crossorigin="anonymous"></script>
 
     </head>
 
@@ -35,8 +36,24 @@
 
           <div id="room-in" style="display:none;">
             <h2 id="header"></h2>
+            <p id="comment">You're?</p>
             <div id="live-room">
-              <div id="user"></div>
+              <div id="radio-group">
+                <div class="input-container">
+                  <input type="radio" class="radiobutton" name="user" id="viewer"  checked>
+                  <div class="radio-tile">
+                    <span><i class="fas fa-users"></i></span>
+                    <label for="viewer" class="radio-tile-label">Viewer</label>
+                  </div>
+                </div>
+                <div class="input-container">
+                  <input type="radio" class="radiobutton" name="user" id="artist" >
+                  <div class="radio-tile">
+                    <span><i class="fas fa-guitar"></i></span>
+                    <label for="artist" class="radio-tile-label">Artist</label>
+                  </div>
+                </div>
+              </div>  
             </div>
             <div class="room-button">
               <button id="leave-room">Leave</button>
@@ -47,29 +64,16 @@
           <div id="room-join"  style="display:none;">
             <div class="room">
               <div class="remote-streams" id="js-remote-streams">
-                <div class="remoteVideo" id="remote00"></div>
-                <div class="remoteVideo" id="remote01"></div>
-                <div class="remoteVideo" id="remote02"></div>
-                <div class="remoteVideo" id="remote03"></div>
-                <div class="remoteVideo" id="remote04"></div>
-                <div class="remoteVideo" id="remote05"></div>
-                <div class="remoteVideo" id="remote06"></div>
-                <div class="remoteVideo" id="remote07"></div>
-                <div class="remoteVideo" id="remote08"></div>
-                <div class="remoteVideo" id="remote09"></div>
-                <div class="remoteVideo" id="remote010"></div>
-                <div class="remoteVideo" id="remote011"></div>
+                <div id="layer"></div>
               </div>
                <video id="videoTag"></video>
-               <div id="layer"></div>
             </div>
           </div>
 
 
         </div>
       <script src="//cdn.webrtc.ecl.ntt.com/skyway-4.4.5.js"></script>
-      <script src="https://kit.fontawesome.com/e9f91402ff.js" crossorigin="anonymous"></script>
       <script src="./shared/key.js"></script>
-      <script src="./shared/main.js"></script>      
+      <script src="./main.js"></script>      
     </body>
 </html>
