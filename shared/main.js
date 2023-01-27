@@ -311,7 +311,7 @@ async function setup(){
   
       //他の参加者が部屋を離れた時
       room.on('peerLeave', peerId => {
-        const remoteVideo = remoteRoom.querySelector(
+        const remoteVideo = remoteVideos.querySelector(
           `[data-peer-id="${peerId}"]`
         );
         remoteVideo.srcObject.getTracks().forEach(track => track.stop());
