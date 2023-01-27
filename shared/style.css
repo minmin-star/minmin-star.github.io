@@ -5,6 +5,7 @@
 	-moz-box-sizing: border-box;
 	-webkit-box-sizing: border-box;
 	box-sizing: border-box;
+  font-family: 'Helvetica Neue', sans-serif;
   margin: 0;
   padding: 0;
   border: 0;
@@ -139,6 +140,13 @@ video {
   width:100vw;
   padding-top:3%;
   padding-left: 2%;
+  height: 80vh;
+}
+
+#live-room{
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #enter{
@@ -255,13 +263,9 @@ video {
   display: grid;
   width: 100%;
   grid-template-columns: 25% 25% 25% 25%;
-  aspect-ratio: 16 / 9;
+  grid-template-rows: 1fr 1fr 1fr;
 }
 
-.remoteVideo{
-  width: 100%;
-  height: 100%;
-}
 
 .drag{
   z-index: 1001;
@@ -353,4 +357,64 @@ canvas{
 #enter-room:hover::before {
   top: 0;
   left: 0;
+}
+
+#radio-group{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+#radio-group .input-container{
+  position: relative;
+  height:  7rem;
+  width:  7rem;
+  margin: 0.5rem;
+}
+#radio-group .input-container .radiobutton{
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+#radio-group .input-container .radio-tile{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #FF7052;
+  border-radius: 5px;
+  padding: 1rem;
+  transition: transform 300ms ease;
+}
+#radio-group .input-container span{
+  color: #FF7052;
+  font-size: 3em;
+}
+#radio-group .input-container .radio-tile-label{
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #FF7052;
+}
+#radio-group .input-container .radiobutton:checked + .radio-tile{
+  background-color: #FF7052;
+  border: 2px solid #FF7052;
+  color: white;
+  transform: scale(1.1, 1.1);
+}
+#radio-group .input-container .radiobutton:checked + .radio-tile span{
+  color: white;
+  background-color: #FF7052;
+}
+#radio-group .input-container .radiobutton:checked + .radio-tile .radio-tile-label{
+  color: white;
+  background-color: #FF7052;
 }

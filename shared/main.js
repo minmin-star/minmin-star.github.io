@@ -25,11 +25,10 @@ let r = 255, g = 255, b = 255;
 const Peer = window.Peer;
 const isFlipped = true;
 
-//自身のストリーム＆キャンバス
+//ストリーム＆キャンバス
 let myStream;
 var Canvas;
-let lay, roomCanvas, myCanvas;
-let roomwidth, roomheight;
+let lay;
 
 //ルームに入ったかどうか
 let roomFlag = false;
@@ -37,32 +36,24 @@ let roomFlag = false;
 //数字のフラッグ
 let numberFlag = false;
 
-//ユーザーの位置
-let user_x, user_y;
-
-//部屋
-let roomnumber, remoteRoom, myRoom;
-let number, receiveNumber;
-
-
 //HTMLのID
 const joinTrigger = document.getElementById('js-join-trigger');
 const remoteVideos = document.getElementById('js-remote-streams');
 const roomId = document.getElementById('js-room-id');
 const yourName = document.getElementById('js-your-name');
+
 const roomEnter = document.getElementById('room-enter');
 const roomJoin = document.getElementById('room-join');
 const roomIn = document.getElementById("room-in");
+
 const header = document.getElementById("header");
 const roomLeave = document.getElementById("leave-room");
 const enterRoom = document.getElementById("enter-room");
 let cav = document.getElementById("canvas");
-let liveRoom = document.getElementById("live-room");
-let user = document.getElementById("user");
 
 let layer01 = document.getElementById('layer');
 
-
+const user = document.getElementsByName('user');
 
 //ビデオ入力
 const localVideo = document.getElementById("videoTag"),
@@ -173,7 +164,6 @@ let Two_Red,Two_White,Two_Blue,Two_Green,Two_Yellow;
 let clapImage;
 
 let t = 0;
-let c = 0;
 
 //画像読み込み先
 function preload(){
@@ -207,20 +197,6 @@ async function setup(){
   lay.parent(layer01);
   lay.style("display", "");
   lay.id('mylayer');
-  
-  roomwidth = windowWidth;
-  roomheight = windowHeight;
-
-  //ルームのレイヤー
-  roomCanvas = createGraphics(roomwidth, roomheight);
-  roomCanvas.parent(liveRoom);
-  roomCanvas.style("display","");
-
-  //ユーザのレイヤー
-  myCanvas = createGraphics(roomwidth/5,roomheight/4);
-  myCanvas.parent(user);
-  myCanvas.position(30, 30);
-  myCanvas.style("display","");
 
   //出力
   const camera = new Camera(localVideo, {
@@ -265,193 +241,96 @@ async function setup(){
 
     //入ったことを示す
     roomFlag = true;  
-    //ユーザーがどこの位置にいるか
-    if( 55 <= user_x && user_x <= 90 && 110 <= user_y && user_y <= 170){
-      number = 0;
-    }
-    else if(55+(roomwidth/5)<= user_x && user_x <= 90+(roomwidth/5) && 110 <= user_y && user_y <= 170 ){
-      number = 1;
-    }
-    else if(55+(roomwidth*2/5)<= user_x && user_x <= 90+(roomwidth*2/5) && 110 <= user_y && user_y <= 170 ){
-      number = 2;
-    }
-    else if(55+(roomwidth*3/5)<= user_x && user_x <= 90+(roomwidth*3/5) && 110 <= user_y && user_y <= 170 ){
-      number = 3;
-    }
-    else if( 55 <= user_x && user_x <= 90 && 110+(roomheight/4) <= user_y && user_y <= 170+(roomheight/4)){
-      number = 4;
-    }
-    else if(55+(roomwidth/5)<= user_x && user_x <= 90+(roomwidth/5) && 110+(roomheight/4) <= user_y && user_y <= 170+(roomheight/4) ){
-      number = 5;
-    }
-    else if(55+(roomwidth*2/5)<= user_x && user_x <= 90+(roomwidth*2/5) && 110+(roomheight/4) <= user_y && user_y <= 170+(roomheight/4) ){
-      number = 6;
-    }
-    else if(55+(roomwidth*3/5)<= user_x && user_x <= 90+(roomwidth*3/5) && 110+(roomheight/4) <= user_y && user_y <= 170+(roomheight/4) ){
-      number = 7;
-    }
-    else if( 55 <= user_x && user_x <= 90 && 110+(roomheight/2) <= user_y && user_y <= 170+(roomheight/2)){
-      number = 8;
-    }
-    else if(55+(roomwidth/5)<= user_x && user_x <= 90+(roomwidth/5) && 110+(roomheight/2) <= user_y && user_y <= 170+(roomheight/2) ){
-      number = 9;
-    }
-    else if(55+(roomwidth*2/5)<= user_x && user_x <= 90+(roomwidth*2/5) && 110+(roomheight/2) <= user_y && user_y <= 170+(roomheight/2) ){
-      number = 10;
-    }
-    else if(55+(roomwidth*3/5)<= user_x && user_x <= 90+(roomwidth*3/5) && 110+(roomheight/2) <= user_y && user_y <= 170+(roomheight/2) ){
-      number = 11;
-    }
-    //アーティスト側
-    else if( 85 <= user_x && user_x <= 120 && 110+(roomheight*3/4) <= user_y && user_y <= 170+(roomheight*3/4)){
-      number = 12;
-    }
-    else if( 85+(roomwidth/5) <= user_x && user_x <= 120+(roomwidth/5) && 110+(roomheight*3/4) <= user_y && user_y <= 170+(roomheight*3/4)){
-      number = 13;
-    }
-    else if( 85+(roomwidth*2/5) <= user_x && user_x <= 120+(roomwidth*2/5) && 110+(roomheight*3/4) <= user_y && user_y <= 170+(roomheight*3/4)){
-      number = 14;
-    }
-    else{
-      number = 120;
-    }
 
-    if( number == 120){
-      alert('そこに場所はありません');
-      roomIn.style.display = "block";
-      roomJoin.style.display = "none";
-    }else{
-
-      for(let x = 0; x < localStorage.length; x++){
-        const key = localStorage.key(x);
-        const num = localStorage.getItem(key);
-        console.log(num + ","+ number);
-        if( num == number){
-          numberFlag = true;
-        }
-      };
-      if(numberFlag){
-        alert("その場所は既に取られてしまいました...。");
-        roomIn.style.display = "block";
-        roomJoin.style.display = "none";
-        numberFlag= false;
-      }
-      else{
-        //自分の位置
-        if( 0 <= number && number <= 11){
-          roomnumber = "remote0" + String(number);
-          myRoom = document.getElementById(roomnumber);
-          myRoom.append(layer01);
-
-          const room = peer.joinRoom(roomId.value, {
-          mode: 'sfu',
-          stream: myStream,
-          });
-
-          room.on('open', () =>{
-            localStorage.setItem(peer.id, number);
-          });
-
-          roomIn.style.display = "none";
-          roomJoin.style.display = "block";
+    //参加者の場合
+    if( user.item(0).checked == true ){
         
-          // Render remote stream for new peer join in the room
-          room.on('stream', async stream => {
-            receiveNumber = localStorage.getItem(stream.peerId);
-            if(0 <= receiveNumber && receiveNumber <=11){   
-              roomnumber = "remote0"+ String(receiveNumber);
-              remoteRoom = document.getElementById(roomnumber);
-            }
-            const newVideo = document.createElement('video');
-            newVideo.srcObject = stream;
-            newVideo.playsInline = true;
-            // mark peerId to find it later at peerLeave event
-            newVideo.setAttribute('data-peer-id', stream.peerId);
-            remoteRoom.append(newVideo);
-            await newVideo.play().catch(console.error);
-          });
-
-          // for closing room members
-          room.on('peerLeave', peerId => {
-            const remoteVideo = remoteRoom.querySelector(
-              `[data-peer-id="${peerId}"]`
-            );
-            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-            remoteVideo.srcObject = null;
-            remoteVideo.remove();
-            
-          });
-
-
-          // for closing myself
-          room.once('close', () => {
-            Array.from(remoteRoom.children).forEach(remoteVideo => {
-              remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-              remoteVideo.srcObject = null;
-              remoteVideo.remove();
-            });
-          });
-        }else if( 12 <= number && number <= 14){
-          //artistFlag=true;
-          layer01.style.display = "none";
+      //自身のストリーム含んで部屋に参加
+      const room = peer.joinRoom(roomId.value, {
+        mode: 'sfu',
+        stream: myStream,
+      });
           
-          const room = peer.joinRoom(roomId.value, {
-            mode: 'sfu',
-          });
-  
-          room.on('open', () =>{
-            localStorage.setItem(peer.id, number);
-          });
-  
-          roomIn.style.display = "none";
-          roomJoin.style.display = "block";
+      //映像画面に遷移
+      roomIn.style.display = "none";
+      roomJoin.style.display = "block";
         
-          // Render remote stream for new peer join in the room
-          room.on('stream', async stream => {
-            receiveNumber = localStorage.getItem(stream.peerId);
-            if(0 <= receiveNumber && receiveNumber <=11){   
-              roomnumber = "remote0"+ String(receiveNumber);
-              remoteRoom = document.getElementById(roomnumber);
-            }
-            const newVideo = document.createElement('video');
-            newVideo.srcObject = stream;
-            newVideo.playsInline = true;
-            // mark peerId to find it later at peerLeave event
-            newVideo.setAttribute('data-peer-id', stream.peerId);
-            remoteRoom.append(newVideo);
-            await newVideo.play().catch(console.error);
-          });
-  
-          // for closing room members
-          room.on('peerLeave', peerId => {
-            if( 0 <= localStorage.getItem(peerId) <= 11){
-            const remoteVideo = remoteRoom.querySelector(
-              `[data-peer-id="${peerId}"]`
-            );
-            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
-            remoteVideo.srcObject = null;
-            remoteVideo.remove();
-            }
-          });
-  
-        }
-        
-      }
+      //他の参加者のストリームを検出した時
+      room.on('stream', async stream => {
+        const newVideo = document.createElement('video');
+        newVideo.srcObject = stream;
+        newVideo.playsInline = true;
+        // mark peerId to find it later at peerLeave event
+        newVideo.setAttribute('data-peer-id', stream.peerId);
+        remoteVideos.append(newVideo);
+        await newVideo.play().catch(console.error);
+      });
+
+      //他の参加者が退出した時
+      room.on('peerLeave', peerId => {
+        const remoteVideo = remoteVideos.querySelector(
+          `[data-peer-id="${peerId}"]`
+        );
+        remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+        remoteVideo.srcObject = null;
+        remoteVideo.remove();   
+      });
+
+      //自分が退出した時
+        room.once('close', () => {
+        Array.from(remoteVideos.children).forEach(remoteVideo => {
+          remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+          remoteVideo.srcObject = null;
+          remoteVideo.remove();
+        });
+      });
     }
+    //アーティストの場合
+    else{
+      layer01.style.display = "none";
+        
+      //自身のストリームを送信しない受信のみモードにする
+      const room = peer.joinRoom(roomId.value, {
+        mode: 'sfu',
+      });
+  
+      //映像画面に遷移
+      roomIn.style.display = "none";
+      roomJoin.style.display = "block";
+        
+      //他の参加者が参加してきたとき
+      room.on('stream', async stream => {
+        const newVideo = document.createElement('video');
+        newVideo.srcObject = stream;
+        newVideo.playsInline = true;
+        // mark peerId to find it later at peerLeave event
+        newVideo.setAttribute('data-peer-id', stream.peerId);
+        remoteVideos.append(newVideo);
+        await newVideo.play().catch(console.error);
+      });
+  
+      //他の参加者が部屋を離れた時
+      room.on('peerLeave', peerId => {
+        const remoteVideo = remoteRoom.querySelector(
+          `[data-peer-id="${peerId}"]`
+        );
+        remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+        remoteVideo.srcObject = null;
+        remoteVideo.remove();
+      });
+    }
+      
+    
   });
 
+  //エラー処理
   peer.on('error', console.error);
-
-  window.addEventListener('beforeunload', () => {
-    peer.destroy();
-    localStorage.removeItem(peer.id);
-  });
 
   //ハート
   for( let i = 0; i < NUM_OF_HEARTS; i++){
     heart.push(new Hearts());
   }
-  
+
   //花火
   for(let i=0; i<NUM_OF_FIRE; i++){
 	fw.push(new Fire());
@@ -478,53 +357,27 @@ async function setup(){
   system = new ParticleSystem(createVector(200,200));
 
 
-  //人物
-  for( var i = 0; i < participanthNum; i++ ){
-    for (var j = 0; j < participantwNum; j++){    
-      participant.push(new human((roomwidth/5)*j, (roomheight/4)*i, 240));
-    }
-  }
-  for( var x = 0; x < localStorage.length; x++){
-    const key = localStorage.key(x);
-    const num = localStorage.getItem(key);
-    participant[num].c = 120
-  }
-  
-  for( var i = 0; i < artistNum; i++){
-    artist.push(new human((roomwidth/5)*i+30, roomheight*3/4, 150));
-  }
-
-
 }
 
 /////////////////////////////////////ループ//////////////////////////////////////////
 function draw(){
   Canvas.clear();
-  myCanvas.clear();
   Canvas.background("rgba(0, 0, 0, 0.2)");
   lay.background(200);
 
-  //ルームの背景画面作成
-  roomCanvas.background("rgba(100, 100, 100, 0.8)")
-  for( var i = 0; i < participanthNum*participantwNum; i++){
-    participant[i].show();
-  }
-  for( var i = 0; i < artistNum; i++ ){
-    artist[i].show();
-  }
 
   //サイズ変更
   if(!roomFlag){
-  //座標をスタックに保存
-  push();
-  if (isFlipped) {
-    translate(width, 0); //表示ウィンドウ内の移動する量translate(x,y)移動 ループが再び始まると変換はリセット
-    scale(-1, 1);//頂点を拡大及び縮小 scale(x,y)⇒反転している？
-  }
-  displayWidth = width;
-  displayHeight = (width * lay.height) / lay.width;
-  //前の座標を復元(pop以降の設定項目リセット)
-  pop();
+    //座標をスタックに保存
+    push();
+    if (isFlipped) {
+      translate(width, 0); //表示ウィンドウ内の移動する量translate(x,y)移動 ループが再び始まると変換はリセット
+      scale(-1, 1);//頂点を拡大及び縮小 scale(x,y)⇒反転している？
+    }
+    displayWidth = width;
+    displayHeight = (width * lay.height) / lay.width;
+    //前の座標を復元(pop以降の設定項目リセット)
+    pop();
   }
   else{    
     push();
@@ -534,29 +387,9 @@ function draw(){
     lay.resizeCanvas(displayWidth, displayHeight);
   }
 
-  //自分のアイコン
-  myCanvas.push();
-  myCanvas.fill(255, 154, 136);
-  myCanvas.noStroke();
-  myCanvas.ellipse( 50, 50, 100/3, 100/3);
-  //ellipse( this.w/2, this.h/3, this.w/3, this.w/3);
-  myCanvas.triangle( 50, 50, 100/3, 100, 200/3, 100);
-  //triangle( this.w/2, this.h/3, this.w/3, this.h*2/3, this.w*2/3 , this.h*2/3);
-  myCanvas.fill(255, 255, 255);
-  myCanvas.textAlign(CENTER);
-  myCanvas.text(yourName.value, 12,44,80,15);
-  myCanvas.pop();
-
-
   drawHands(); 
-/*
-  if(!artistFlag){
-     myStream = lay.elt.captureStream(frameRate());
-  }
-  else{
-    myStream = null;
-  }
-  */
+
+  //キャンバスのストリーム(相手に送信する用)
   myStream = lay.elt.captureStream(frameRate());
 
 }
@@ -613,7 +446,8 @@ function drawHands(){
           //人差し指があがってるとき
           //残像が残るペイント
           if(flag_one.index == true && flag_one.middle == false && flag_one.ring == false&& flag_one.pinky == false && flag_one.thumb == false){
-            penlight_remain(tip.index);
+            //penlight_remain(tip.index);
+            penlight(tip.index, displayWidth, displayHeight);
           }
 
           //パーにしている時
@@ -848,7 +682,8 @@ function drawHands(){
 
     lay.drawingContext.shadowBlur = 30;
     lay.drawingContext.shadowColor= color(r, g, b)
-    //fill(255
+    lay.fill(255,250);
+    lay.rect(0, 0, w, h);
     lay.noStroke();
     lay.fill(255);
     lay.ellipse(position.x * w, position.y * h, 30 );
@@ -910,25 +745,6 @@ class Hearts{
 
   isOffScreen(){
     return this.y < 0;
-  }
-}
-
-class human{
-  constructor(vx, vy, color){
-    this.x = 10 + vx;
-    this.y = 10 + vy;
-    this.w = 100;
-    this.h = 150;
-    this.c = color;
-  }
-
-  show(){
-    roomCanvas.push();
-    roomCanvas.noStroke();
-    roomCanvas.fill(this.c);
-    roomCanvas.ellipse( this.w/2+this.x, this.h/3+this.y, this.w/3, this.w/3);
-    roomCanvas.triangle( this.w/2+this.x, this.h/3+this.y, this.w/3+this.x, this.h*2/3+this.y, this.w*2/3+this.x, this.h*2/3+this.y);
-    roomCanvas.pop();
   }
 }
 
@@ -1181,53 +997,4 @@ ParticleSystem.prototype.run = function() {
       this.particles.splice(i, 1);
     }
   }
-};
-
-//ビデオ移動
-
-let dropJudge = null;
-
-const layer02 = document.getElementById("user");
-
-layer02.onmousedown = function(event){
-
-  layer02.style.cursor = 'grabbing';
-
-  let shiftX = event.clientX - layer02.getBoundingClientRect().left;
-  let shiftY = event.clientY - layer02.getBoundingClientRect().top;
-
-  layer02.style.position = 'absolute';
-  layer02.style.zIndex = 1000;
-
-  movePosition(event.pageX, event.pageY);
-   
-   // #box要素の位置を決める
-   function movePosition(pageX, pageY) {
-    layer02.style.left = pageX - shiftX + 'px';
-    layer02.style.top = pageY - shiftY + 'px';
-  }
-
-   // マウスを動かした時の処理
-   function mouseMove(event) {
-    movePosition(event.pageX, event.pageY);
-
-    user_x = event.pageX;
-    user_y = event.pageY;
-    layer02.hidden = true;
-    layer02.hidden = false;
-
-  }
-
-  document.addEventListener('mousemove', mouseMove);
- 
-  // マウスを離した時にmousemoveイベントを解除する
-  document.onmouseup = function() {
-      document.removeEventListener('mousemove', mouseMove);
-      layer02.style.cursor = 'grab';
-  };
-
-};
-
-layer02.ondragstart = function() {
-  return false;
 };
