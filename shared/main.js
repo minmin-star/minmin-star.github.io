@@ -42,7 +42,7 @@ let enjoy_id = poseNUM;
 
 //モデル
 let model;
-const MODEL_URL = './model/model.json';
+const MODEL_URL = '../model/model.json';
 let id, result;
 
 //HTMLのID
