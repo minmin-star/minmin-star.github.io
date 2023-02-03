@@ -1,79 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Live Gesture</title>
-        <link rel="stylesheet" href="./shared/style.css">
-       
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-        <script src="https://kit.fontawesome.com/e9f91402ff.js" crossorigin="anonymous"></script>
 
-    </head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Gesture</title>
+  <link rel="stylesheet" href="./shared/style.css">
 
-    <body>
-        <div class="container">
-          <div class="loader-bg">
-            <div class="loader"></div>
-          </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://kit.fontawesome.com/e9f91402ff.js" crossorigin="anonymous"></script>
+  <!-- Load TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+  <!-- Import @tensorflow/tfjs-tflite -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite/dist/tf-tflite.min.js"></script>
 
-          <div id="room-enter">
-            <h1 class="heading">LiveGesture Room </h1>
-            <div class="enter">
-                <legend class="legend">Login</legend>
-                <div class="input"><input type="text" placeholder="Room Name" id="js-room-id"><span><i class="fa-sharp fa-solid fa-music"></i></span></div>
-                <div class="input"><input type="text" placeholder="YOUR NAME" id="js-your-name"><span><i class="fa-solid fa-user"></i></span></div>
-                <div class="input"><button id="js-join-trigger">Join</button></div>
-                <div id="canvas"></div>
+
+</head>
+
+<body>
+  <div class="container">
+    <div class="loader-bg">
+      <div class="loader"></div>
+    </div>
+
+    <div id="room-enter">
+      <h1 class="heading">LiveGesture Room </h1>
+      <div class="enter">
+        <legend class="legend">Login</legend>
+        <div class="input"><input type="text" placeholder="Room Name" id="js-room-id"><span><i
+              class="fa-sharp fa-solid fa-music"></i></span></div>
+        <div class="input"><input type="text" placeholder="YOUR NAME" id="js-your-name"><span><i
+              class="fa-solid fa-user"></i></span></div>
+        <div class="input"><button id="js-join-trigger">Join</button></div>
+        <div id="canvas"></div>
+      </div>
+    </div>
+
+
+    <div id="room-in" style="display:none;">
+      <h2 id="header"></h2>
+      <h2 id="comment"></h2>
+      <div id="live-room">
+        <div id="radio-group">
+          <div class="input-container">
+            <input type="radio" class="radiobutton" name="user" id="viewer" checked>
+            <div class="radio-tile">
+              <span><i class="fas fa-users"></i></span>
+              <label for="viewer" class="radio-tile-label">Viewer</label>
             </div>
           </div>
-
-
-          <div id="room-in" style="display:none;">
-            <h2 id="header"></h2>
-            <p id="comment">You're?</p>
-            <div id="live-room">
-              <div id="radio-group">
-                <div class="input-container">
-                  <input type="radio" class="radiobutton" name="user" id="viewer"  checked>
-                  <div class="radio-tile">
-                    <span><i class="fas fa-users"></i></span>
-                    <label for="viewer" class="radio-tile-label">Viewer</label>
-                  </div>
-                </div>
-                <div class="input-container">
-                  <input type="radio" class="radiobutton" name="user" id="artist" >
-                  <div class="radio-tile">
-                    <span><i class="fas fa-guitar"></i></span>
-                    <label for="artist" class="radio-tile-label">Artist</label>
-                  </div>
-                </div>
-              </div>  
-            </div>
-            <div class="room-button">
-              <button id="leave-room">Leave</button>
-              <button id="enter-room">Enter</button>
+          <div class="input-container">
+            <input type="radio" class="radiobutton" name="user" id="artist">
+            <div class="radio-tile">
+              <span><i class="fas fa-guitar"></i></span>
+              <label for="artist" class="radio-tile-label">Artist</label>
             </div>
           </div>
-          
-          <div id="room-join"  style="display:none;">
-            <div class="room">
-              <div class="remote-streams" id="js-remote-streams">
-                <div id="layer"></div>
-              </div>
-               <video id="videoTag"></video>
-            </div>
-          </div>
-
-
         </div>
-      <script src="//cdn.webrtc.ecl.ntt.com/skyway-4.4.5.js"></script>
-      <script src="./shared/key.js"></script>
-      <script src="./shared/main.js"></script>      
-    </body>
+      </div>
+      <div class="room-button">
+        <button id="leave-room">Leave</button>
+        <button id="enter-room">Enter</button>
+      </div>
+    </div>
+
+    <div id="room-join" style="display:none;">
+      <div class="room">
+        <div class="remote-streams" id="js-remote-streams">
+          <div id="layer"></div>
+        </div>
+        <video id="videoTag"></video>
+      </div>
+      <div id="enjoy_effect"></canvas>
+    </div>
+
+
+  </div>
+  <script src="//cdn.webrtc.ecl.ntt.com/skyway-4.4.5.js"></script>
+  <script src="./shared/key.js"></script>
+  <script src="./main.js"></script>
+</body>
+
 </html>
