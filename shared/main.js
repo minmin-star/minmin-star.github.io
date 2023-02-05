@@ -113,22 +113,22 @@ var dots = [];
 var count = 15;
 var noiseval = 0.01;
 
-class Queue{
-  constructor(){
+class Queue {
+  constructor() {
     this.items = [];
   }
   //いれる
-  enqueue(element){
+  enqueue(element) {
     return this.items.push(element);
   }
   //出す
-  dequeue(){
-    if(this.items.length > 0){  
+  dequeue() {
+    if (this.items.length > 0) {
       return this.items.shift();
     }
   }
   //さいず
-  size(){
+  size() {
     return this.items.length;
   }
 }
@@ -251,6 +251,19 @@ async function setup() {
       roomIn.style.display = "none";
       roomJoin.style.display = "block";
 
+      //ハート
+      for (let i = 0; i < NUM_OF_HEARTS; i++) {
+        heart.push(new Hearts(layer01.clientWidth, layer01.clientHeight));
+      }
+      //花火
+      for (let i = 0; i < NUM_OF_FIRE; i++) {
+        fw.push(new Fire(layer01.clientWidth, layer01.clientHeight));
+      }
+      //桜
+      for (let i = 0; i < sakuraNum; i++) {
+        fubuki.push(new Sakura(layer01.clientWidth, layer01.clientHeight));
+      }
+
       //他のユーザから送信されたデータを受信した時
       room.on("data", ({ src, data }) => {
         if (localStorage.hasOwnProperty(src) == false) {
@@ -263,17 +276,20 @@ async function setup() {
         }
 
         if (localStorage.length > 0) {
-          let c = Array(poseNUM+1);
+          let c = Array(poseNUM + 1);
           c.fill(0);
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             const num = localStorage.getItem(key);
-            if( parseInt(num) !== poseNUM*2 ){
+            if (parseInt(num) !== poseNUM * 2) {
               const n = parseInt(num) % poseNUM;
               c[n] += 1
             }
+            else{
+              enjoy_flag = 8;
+            }
           }
-          if (Math.max(...c) >= 1) {
+          if (Math.max(...c) >= 2) {
             enjoy_flag = maxIndex(c);
           }
         }
@@ -319,8 +335,18 @@ async function setup() {
       //映像画面に遷移
       roomIn.style.display = "none";
       roomJoin.style.display = "block";
-
-
+      //ハート
+      for (let i = 0; i < NUM_OF_HEARTS; i++) {
+        heart.push(new Hearts(layer_enjoy.clientWidth, layer_enjoy.clientHeight));
+      }
+      //花火
+      for (let i = 0; i < NUM_OF_FIRE; i++) {
+        fw.push(new Fire(layer_enjoy.clientWidth, layer_enjoy.clientHeight));
+      }
+      //桜
+      for (let i = 0; i < sakuraNum; i++) {
+        fubuki.push(new Sakura(layer_enjoy.clientWidth, layer_enjoy.clientHeight));
+      }
       //他のユーザから送信されたデータを受信した時
       room.on("data", ({ src, data }) => {
         if (localStorage.hasOwnProperty(src) == false) {
@@ -333,12 +359,12 @@ async function setup() {
         }
 
         if (localStorage.length > 0) {
-          let c = Array(poseNUM+1);
+          let c = Array(poseNUM + 1);
           c.fill(0);
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             const num = localStorage.getItem(key);
-            if( parseInt(num) !== poseNUM*2 ){
+            if (parseInt(num) !== poseNUM * 2) {
               const n = parseInt(num) % poseNUM;
               c[n] += 1
             }
@@ -378,18 +404,7 @@ async function setup() {
   //エラー処理
   peer.on('error', console.error);
 
-  //ハート
-  for (let i = 0; i < NUM_OF_HEARTS; i++) {
-    heart.push(new Hearts(layer01.clientWidth, layer01.clientHeight));
-  }
-  //花火
-  for (let i = 0; i < NUM_OF_FIRE; i++) {
-    fw.push(new Fire(layer01.clientWidth, layer01.clientHeight));
-  }
-  //桜
-  for (let i = 0; i < sakuraNum; i++) {
-    fubuki.push(new Sakura(layer01.clientWidth, layer01.clientHeight));
-  }
+
   clr.push(color(244, 191, 252, 150));
   clr.push(color(255, 219, 248, 150));
   clr.push(color(246, 204, 252, 150));
@@ -415,7 +430,7 @@ function draw() {
   if (!roomFlag) {
     push();
     if (isFlipped) {
-      translate(width, 0); 
+      translate(width, 0);
       scale(-1, 1);
     }
     displayWidth = width;
@@ -430,43 +445,45 @@ function draw() {
     lay.resizeCanvas(displayWidth, displayHeight);
   }
 
-  drawHands();
+  if( user.item(0).checked == true){
+    drawHands();
+  }
 
   //他の人と反応が被った時のエフェクト
   if (enjoy_flag == 0) {
   }
-  else if( enjoy_flag == 1){
+  else if (enjoy_flag == 1) {
     effect.push();
     effect.fill(255, 255, 255, random(100))
     effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
     effect.pop();
   }
-  else if( enjoy_flag == 4){
-      effect.push();
-      effect.fill(255, 169, 73, random(100))
-      effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
-      effect.pop();
+  else if (enjoy_flag == 4) {
+    effect.push();
+    effect.fill(255, 169, 73, random(100))
+    effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
+    effect.pop();
   }
-  else if( enjoy_flag == 5){
-      effect.push();
-      effect.fill(168, 110, 255, random(100))
-      effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
-      effect.pop();
+  else if (enjoy_flag == 5) {
+    effect.push();
+    effect.fill(168, 110, 255, random(100))
+    effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
+    effect.pop();
   }
-  else if( enjoy_flag == 6){
+  else if (enjoy_flag == 6) {
     effect.push();
     effect.fill(255, 49, 99, random(100))
     effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
     effect.pop();
   }
-  else if( enjoy_flag == 7){
+  else if (enjoy_flag == 7) {
     effect.push();
     effect.fill(255, 210, 243, random(100))
     effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
     effect.pop();
   }
 
-  myStream = lay.elt.captureStream(frameRate());
+  myStream = lay.elt.captureStream(35);
 
 }
 
@@ -486,10 +503,10 @@ function hand_pose(landmark) {
 }
 
 //ハンドジェスチャ認識
-function hand_gesture(landmark){
+function hand_gesture(landmark) {
   let result;
-  const example = tf.tidy ( () =>{
-    const ex = tf.tensor(landmark, [1,48])
+  const example = tf.tidy(() => {
+    const ex = tf.tensor(landmark, [1, 48])
     const prediction = history.predict(ex);
 
     result = maxIndex(prediction.dataSync());
@@ -509,8 +526,8 @@ function landmark_get() {
 
   //相対座標に変換
   for (var i = 0; i < 21; i++) {
-    var x = ( keypointsHand[0][i].x - keypointsHand[0][0].x )*displayWidth;
-    var y = ( keypointsHand[0][i].y - keypointsHand[0][0].y )*displayHeight;
+    var x = (keypointsHand[0][i].x - keypointsHand[0][0].x) * displayWidth;
+    var y = (keypointsHand[0][i].y - keypointsHand[0][0].y) * displayHeight;
     var z = keypointsHand[0][i].z - keypointsHand[0][0].z;
     hand.push([x, y, z]);
   }
@@ -535,29 +552,29 @@ function landmark_get() {
 }
 
 //座標取得
-function history_get(point){
-  if( 16 <= queue.size() ){
+function history_get(point) {
+  if (16 <= queue.size()) {
     queue.dequeue();
     queue.enqueue(point);
 
     let newpoint = [];
 
-    for( let i = 0; i < queue.size(); i++){
-      var x = (queue.items[i].x - queue.items[0].x)/displayWidth;
-      var y = (queue.items[i].y - queue.items[0].y)/displayHeight;
+    for (let i = 0; i < queue.size(); i++) {
+      var x = (queue.items[i].x - queue.items[0].x) / displayWidth;
+      var y = (queue.items[i].y - queue.items[0].y) / displayHeight;
       var z = queue.items[i].z - queue.items[0].z;
-      newpoint.push([x,y,z]);
+      newpoint.push([x, y, z]);
     }
     let onepoint = [];
-    
-    onepoint = newpoint.reduce( (acc, elem)=>{
+
+    onepoint = newpoint.reduce((acc, elem) => {
       return acc.concat(elem)
     })
 
     return onepoint;
 
   }
-  else{
+  else {
     queue.enqueue(point);
     return queue;
   }
@@ -567,8 +584,8 @@ function history_get(point){
 function drawHands() {
 
   if (keypointsHand.length == 0) {
-    if (enjoy_id !== poseNUM*2 && room !== undefined) {
-      enjoy_id = poseNUM*2;
+    if (enjoy_id !== poseNUM * 2 && room !== undefined) {
+      enjoy_id = poseNUM * 2;
       room.send(String(enjoy_id));
       localStorage.setItem(peer.id, enjoy_id)
     }
@@ -594,25 +611,25 @@ function drawHands() {
       lay.clear();
       let history_result = [];
       history_result = history_get(keypointsHand[0][12]);
-      if( history_result.length == 16*3 ){
+      if (history_result.length == 16 * 3) {
         history_id = hand_gesture(history_result);
 
         console.log(history_id);
-        if( history_id == 1){
+        if (history_id == 1) {
 
         }
-        else if( history_id == 2){
+        else if (history_id == 2) {
           penlight(tip.index, displayWidth, displayHeight);
         }
-        else if( history_id == 3){
+        else if (history_id == 3) {
         }
-        else{
+        else {
 
         }
       }
     }
     //グーの時
-    else if (id == 1 || id == 1+poseNUM) {
+    else if (id == 1 || id == 1 + poseNUM) {
       lay.clear();
       for (let i = 0; i < sakuraNum; i++) {
         fubuki[i].draw();
@@ -620,12 +637,12 @@ function drawHands() {
       }
     }
     //ピースの時
-    else if (id == 2 || id == 2+poseNUM) {
+    else if (id == 2 || id == 2 + poseNUM) {
       lay.clear();
       Star(random() * lay.width, random() * lay.height, random() * 7);
     }
     //メロイックサインの時
-    else if (id == 3 || id == 3+poseNUM) {
+    else if (id == 3 || id == 3 + poseNUM) {
       lay.clear();
       for (var i = 0; i < count; i++) {
         dots[i].drawMe();
@@ -633,18 +650,18 @@ function drawHands() {
       }
     }
     //いいね
-    else if (id == 4 || id == 4+poseNUM) {
+    else if (id == 4 || id == 4 + poseNUM) {
       lay.clear();
       for (let f of fw) {
         f.run(layer01.clientWidth, layer01.clientHeight);
       }
     }
     //ブーイング
-    else if (id == 5 || id == 5+poseNUM) {
+    else if (id == 5 || id == 5 + poseNUM) {
       lay.clear();
     }
     //ハート
-    else if (id == 6 || id == 6+poseNUM) {
+    else if (id == 6 || id == 6 + poseNUM) {
       lay.clear();
       for (let b of heart) {
         b.move(layer01.clientWidth, layer01.clientHeight);
@@ -652,7 +669,7 @@ function drawHands() {
       }
     }
     //きゅんです
-    else if (id == 7 || id == 7+poseNUM) {
+    else if (id == 7 || id == 7 + poseNUM) {
       lay.clear();
       const size = dist(tip.thumb.x, tip.thumb.y, tip.index.x, tip.index.y);
       mini_heart(keypointsHand[0][6].x * displayWidth, keypointsHand[0][6].y * displayHeight, size * displayWidth);
@@ -666,7 +683,7 @@ function drawHands() {
       localStorage.setItem(peer.id, enjoy_id)
     }
   }
-  else{}
+  else { }
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------//
@@ -699,7 +716,7 @@ function Star(x, y, r) {
 //ペンライトの動き
 function penlight(position, w, h) {
   lay.push();
-  lay.fill(0, 0, 0,50);
+  lay.fill(0, 0, 0, 50);
   lay.rect(0, 0, w, h);
   lay.drawingContext.shadowBlur = 30;
   lay.drawingContext.shadowColor = color(255, 255, 255)
@@ -763,13 +780,13 @@ class Hearts {
 
 //花火
 class Fire {
-  constructor(w,h) {
+  constructor(w, h) {
     this.p1 = 0
     this.p2 = 0
     this.lifeSpan = 100;
     this.ang = random(10);
     this.aStep = random(-1, 1) * 0.001;
-    this.sets(w,h);
+    this.sets(w, h);
   }
 
   show() {
@@ -815,15 +832,15 @@ class Fire {
     this.col = random(colors);
   }
 
-  run(w,h) {
+  run(w, h) {
     if (this.life < this.lifeSpan) this.show();
-    this.move(w,h);
+    this.move(w, h);
   }
 }
 
 //桜
 class Sakura {
-  constructor(w,h) {
+  constructor(w, h) {
     var n = 4;
     var A, md, r, R, x, y;
 
