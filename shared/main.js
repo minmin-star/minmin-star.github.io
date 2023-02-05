@@ -266,15 +266,8 @@ async function setup() {
 
       //他のユーザから送信されたデータを受信した時
       room.on("data", ({ src, data }) => {
-        if (localStorage.hasOwnProperty(src) == false) {
-          localStorage.setItem(src, data);
-        }
-        else {
-          if (localStorage.getItem(src) !== data) {
-            localStorage.setItem(src, data);
-          }
-        }
-
+        localStorage.setItem(src, data);
+      
         if (localStorage.length > 0) {
           let c = Array(poseNUM + 1);
           c.fill(0);
@@ -349,15 +342,8 @@ async function setup() {
       }
       //他のユーザから送信されたデータを受信した時
       room.on("data", ({ src, data }) => {
-        if (localStorage.hasOwnProperty(src) == false) {
-          localStorage.setItem(src, data);
-        }
-        else {
-          if (localStorage.getItem(src) !== data) {
-            localStorage.setItem(src, data);
-          }
-        }
-
+        localStorage.setItem(src, data);
+          
         if (localStorage.length > 0) {
           let c = Array(poseNUM + 1);
           c.fill(0);
@@ -408,7 +394,6 @@ async function setup() {
   clr.push(color(244, 191, 252, 150));
   clr.push(color(255, 219, 248, 150));
   clr.push(color(246, 204, 252, 150));
-
   //音符
   mus = [One_Blue, One_Green, Two_Red, Two_White, Two_Yellow];
   pointinit();
