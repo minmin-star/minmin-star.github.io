@@ -630,7 +630,7 @@ function drawHands() {
       for (var i = 0; i < count; i++) {
         dots[i].drawMe();
         dots[i].updateMe();
-      }p
+      }
     }
     //いいね
     else if (id == 4 || id == 4+poseNUM) {
