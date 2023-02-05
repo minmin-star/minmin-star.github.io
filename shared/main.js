@@ -467,7 +467,7 @@ function draw() {
 
   drawHands();
   //キャンバスのストリーム(相手に送信する用)
-  //myStream = lay.elt.captureStream(frameRate());
+  myStream = lay.elt.captureStream(frameRate());
 
 }
 
