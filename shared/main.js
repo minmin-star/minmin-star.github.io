@@ -47,6 +47,9 @@ let history;
 const HISTORY_URL = "./history/model.json";
 let history_id;
 
+//配列宣言
+let handpose_one = [];
+
 //HTMLのID
 const joinTrigger = document.getElementById('js-join-trigger');
 const remoteVideos = document.getElementById('js-remote-streams');
@@ -97,7 +100,7 @@ var NUM_OF_HEARTS = 10;
 //花火
 let fw = [];
 let colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ff00ff', '#ffffff'];
-var NUM_OF_FIRE = 10;
+var NUM_OF_FIRE = 8;
 
 //桜
 var sakuraNum = 40;
@@ -107,11 +110,8 @@ var clr = [];
 //音符
 var mus = [];
 var dots = [];
-var count = 20;
+var count = 15;
 var noiseval = 0.01;
-
-//炎
-let system = [];
 
 class Queue{
   constructor(){
@@ -157,8 +157,7 @@ hands.onResults(onHandsResults);
 
 //画像
 let imagePNG;
-let One_White, One_Blue, One_Green;
-let Two_Red, Two_White, Two_Yellow;
+let One_Blue, One_Green, Two_Red, Two_White, Two_Yellow;
 
 let t = 0;
 
@@ -166,10 +165,8 @@ let t = 0;
 function preload() {
   imagePNG = loadImage("./heart.png");
 
-  One_White = loadImage("./note/one_white.png");
   One_Blue = loadImage("./note/one_blue.png");
   One_Green = loadImage("./note/one_green.png");
-
   Two_Red = loadImage("./note/two_red.png");
   Two_White = loadImage("./note/two_white.png");
   Two_Yellow = loadImage("./note/two_yellow.png");
@@ -188,21 +185,10 @@ async function setup() {
   lay.id('mylayer');
 
   //盛り上がりエフェクト
-  effect = createCanvas(windowWidth, windowHeight);
+  effect = createGraphics(windowWidth, windowHeight);
   effect.parent(layer_enjoy);
   effect.style("display", "");
 
-  //出力
-  const camera = new Camera(localVideo, {
-    onFrame: async () => {
-      await hands.send({ image: localVideo });
-    },
-    width: 320,
-    height: 180,
-  });
-  camera.start();
-
-  // eslint-disable-next-line require-atomic-updates
   peer = (window.peer = new Peer({
     key: window.__SKYWAY_KEY__,
     debug: 3,
@@ -222,7 +208,7 @@ async function setup() {
       roomIn.style.display = "block";
 
       header.textContent = roomId.value + "'s Room";
-      comment.textContent = yourName.value + "hello! You're??"
+      comment.textContent = yourName.value + "  hello! You're??"
       // Note that you need to ensure the peer has connected to signaling server
       // before using methods of peer instance.
       if (!peer.open) {
@@ -242,12 +228,20 @@ async function setup() {
   //部屋に入るを押したとき
   enterRoom.addEventListener('click', () => {
 
-    //入ったことを示す
     roomFlag = true;
     //参加者の場合
     if (user.item(0).checked == true) {
 
-      //自身のストリーム含んで部屋に参加
+      //出力
+      const camera = new Camera(localVideo, {
+        onFrame: async () => {
+          await hands.send({ image: localVideo });
+        },
+        width: 320,
+        height: 180,
+      });
+      camera.start();
+
       room = peer.joinRoom(roomId.value, {
         mode: 'sfu',
         stream: myStream,
@@ -259,18 +253,15 @@ async function setup() {
 
       //他のユーザから送信されたデータを受信した時
       room.on("data", ({ src, data }) => {
-        //ローカルストレージにすでにそのキーがなかった場合
         if (localStorage.hasOwnProperty(src) == false) {
           localStorage.setItem(src, data);
         }
         else {
-          //データが一緒じゃなかったら
           if (localStorage.getItem(src) !== data) {
             localStorage.setItem(src, data);
           }
         }
 
-        //同じポーズをしている人の割合が一番多いポーズを取り出す
         if (localStorage.length > 0) {
           let c = Array(poseNUM+1);
           c.fill(0);
@@ -282,7 +273,7 @@ async function setup() {
               c[n] += 1
             }
           }
-          if (Math.max(...c) >= 2) {
+          if (Math.max(...c) >= 1) {
             enjoy_flag = maxIndex(c);
           }
         }
@@ -293,7 +284,6 @@ async function setup() {
         const newVideo = document.createElement('video');
         newVideo.srcObject = stream;
         newVideo.playsInline = true;
-        // mark peerId to find it later at peerLeave event
         newVideo.setAttribute('data-peer-id', stream.peerId);
         remoteVideos.append(newVideo);
         await newVideo.play().catch(console.error);
@@ -322,7 +312,6 @@ async function setup() {
     else {
       layer01.style.display = "none";
 
-      //自身のストリームを送信しない受信のみモードにする
       const room = peer.joinRoom(roomId.value, {
         mode: 'sfu',
       });
@@ -334,18 +323,15 @@ async function setup() {
 
       //他のユーザから送信されたデータを受信した時
       room.on("data", ({ src, data }) => {
-        //ローカルストレージにすでにそのキーがなかった場合
         if (localStorage.hasOwnProperty(src) == false) {
           localStorage.setItem(src, data);
         }
         else {
-          //データが一緒じゃなかったら
           if (localStorage.getItem(src) !== data) {
             localStorage.setItem(src, data);
           }
         }
 
-        //同じポーズをしている人の割合が一番多いポーズを取り出す
         if (localStorage.length > 0) {
           let c = Array(poseNUM+1);
           c.fill(0);
@@ -368,7 +354,6 @@ async function setup() {
         const newVideo = document.createElement('video');
         newVideo.srcObject = stream;
         newVideo.playsInline = true;
-        // mark peerId to find it later at peerLeave event
         newVideo.setAttribute('data-peer-id', stream.peerId);
         remoteVideos.append(newVideo);
         await newVideo.play().catch(console.error);
@@ -395,30 +380,25 @@ async function setup() {
 
   //ハート
   for (let i = 0; i < NUM_OF_HEARTS; i++) {
-    heart.push(new Hearts());
+    heart.push(new Hearts(layer01.clientWidth, layer01.clientHeight));
   }
   //花火
   for (let i = 0; i < NUM_OF_FIRE; i++) {
-    fw.push(new Fire());
+    fw.push(new Fire(layer01.clientWidth, layer01.clientHeight));
   }
   //桜
   for (let i = 0; i < sakuraNum; i++) {
-    fubuki.push(new Sakura());
+    fubuki.push(new Sakura(layer01.clientWidth, layer01.clientHeight));
   }
-  //桜カラー配列
   clr.push(color(244, 191, 252, 150));
   clr.push(color(255, 219, 248, 150));
   clr.push(color(246, 204, 252, 150));
 
   //音符
-  mus = [One_White, One_Blue, One_Green, Two_Red, Two_White, Two_Yellow];
+  mus = [One_Blue, One_Green, Two_Red, Two_White, Two_Yellow];
   pointinit();
   for (var i = 0; i < count; i++) {
     dots[i].initMe();
-  }
-  //炎
-  for (let i = 0; i < displayWidth; i = i + 20) {
-    system.push(new ParticleSystem(createVector(i, displayHeight)));
   }
 
   //モデル読み込み
@@ -427,25 +407,19 @@ async function setup() {
 
 }
 
-/////////////////////////////////////ループ//////////////////////////////////////////
+//draw
 function draw() {
-
-  //背景色
-  lay.background(200);
-  //盛り上がりエフェクト消去
   effect.clear();
 
   //サイズ変更
   if (!roomFlag) {
-    //座標をスタックに保存
     push();
     if (isFlipped) {
-      translate(width, 0); //表示ウィンドウ内の移動する量translate(x,y)移動 ループが再び始まると変換はリセット
-      scale(-1, 1);//頂点を拡大及び縮小 scale(x,y)⇒反転している？
+      translate(width, 0); 
+      scale(-1, 1);
     }
     displayWidth = width;
     displayHeight = (width * lay.height) / lay.width;
-    //前の座標を復元(pop以降の設定項目リセット)
     pop();
   }
   else {
@@ -456,16 +430,42 @@ function draw() {
     lay.resizeCanvas(displayWidth, displayHeight);
   }
 
+  drawHands();
+
   //他の人と反応が被った時のエフェクト
-  if (enjoy_flag == 7) {
+  if (enjoy_flag == 0) {
+  }
+  else if( enjoy_flag == 1){
     effect.push();
-    effect.background(255, 255, 255, random(100))
+    effect.fill(255, 255, 255, random(100))
+    effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
+    effect.pop();
+  }
+  else if( enjoy_flag == 4){
+      effect.push();
+      effect.fill(255, 169, 73, random(100))
+      effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
+      effect.pop();
+  }
+  else if( enjoy_flag == 5){
+      effect.push();
+      effect.fill(168, 110, 255, random(100))
+      effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
+      effect.pop();
+  }
+  else if( enjoy_flag == 6){
+    effect.push();
+    effect.fill(255, 49, 99, random(100))
+    effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
+    effect.pop();
+  }
+  else if( enjoy_flag == 7){
+    effect.push();
+    effect.fill(255, 210, 243, random(100))
     effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
     effect.pop();
   }
 
-  drawHands();
-  //キャンバスのストリーム(相手に送信する用)
   myStream = lay.elt.captureStream(frameRate());
 
 }
@@ -499,7 +499,6 @@ function hand_gesture(landmark){
   return result;
 }
 
-//最大値のインデックスを取る関数
 function maxIndex(a) {
   return a.indexOf(Math.max(...a));
 }
@@ -507,7 +506,6 @@ function maxIndex(a) {
 //ランドマーク取得
 function landmark_get() {
   let hand = [];
-  let handpose_one = [];
 
   //相対座標に変換
   for (var i = 0; i < 21; i++) {
@@ -532,6 +530,7 @@ function landmark_get() {
   for (var i = 0; i < handpose_one.length; i++) {
     hand.push(handpose_one[i] / max_value);
   }
+  hand_pose.lenth = 0;
   return hand;
 }
 
@@ -567,7 +566,6 @@ function history_get(point){
 //----------------------------------------------------------------------------------------------------------------------------------------//
 function drawHands() {
 
-  //手を検出しなかった時リターンする
   if (keypointsHand.length == 0) {
     if (enjoy_id !== poseNUM*2 && room !== undefined) {
       enjoy_id = poseNUM*2;
@@ -591,7 +589,6 @@ function drawHands() {
     //認識のid取得
     handpose_result = landmark_get();
     id = hand_pose(handpose_result);
-    console.log(id)
     //パーの時
     if (id == 0 || id == poseNUM) {
       lay.clear();
@@ -600,6 +597,7 @@ function drawHands() {
       if( history_result.length == 16*3 ){
         history_id = hand_gesture(history_result);
 
+        console.log(history_id);
         if( history_id == 1){
 
         }
@@ -618,7 +616,7 @@ function drawHands() {
       lay.clear();
       for (let i = 0; i < sakuraNum; i++) {
         fubuki[i].draw();
-        fubuki[i].move();
+        fubuki[i].move(layer01.clientHeight);
       }
     }
     //ピースの時
@@ -632,28 +630,24 @@ function drawHands() {
       for (var i = 0; i < count; i++) {
         dots[i].drawMe();
         dots[i].updateMe();
-      }
+      }p
     }
     //いいね
     else if (id == 4 || id == 4+poseNUM) {
       lay.clear();
       for (let f of fw) {
-        f.run();
+        f.run(layer01.clientWidth, layer01.clientHeight);
       }
     }
     //ブーイング
     else if (id == 5 || id == 5+poseNUM) {
       lay.clear();
-      for (let i = 0; i < system.length; i++) {
-        system[i].addParticle();
-        system[i].run();
-      }
     }
     //ハート
     else if (id == 6 || id == 6+poseNUM) {
       lay.clear();
       for (let b of heart) {
-        b.move();
+        b.move(layer01.clientWidth, layer01.clientHeight);
         b.show();
       }
     }
@@ -666,8 +660,6 @@ function drawHands() {
     //それ以外の処理
     else {
     }
-    //部屋が立てられていて異なった動きをした時
-    //どの動きをしているか登録
     if (id !== enjoy_id && room !== undefined) {
       enjoy_id = id;
       room.send(String(enjoy_id));
@@ -690,7 +682,6 @@ function drawTwinkle(x, y, r) {
   lay.endShape(CLOSE)
   lay.pop();
 }
-
 //キラキラさせる
 function Star(x, y, r) {
   lay.push();
@@ -708,7 +699,7 @@ function Star(x, y, r) {
 //ペンライトの動き
 function penlight(position, w, h) {
   lay.push();
-  lay.fill(0, 50);
+  lay.fill(0, 0, 0,50);
   lay.rect(0, 0, w, h);
   lay.drawingContext.shadowBlur = 30;
   lay.drawingContext.shadowColor = color(255, 255, 255)
@@ -734,19 +725,19 @@ function mini_heart(x, y, size) {
 
 //ハート作成
 class Hearts {
-  constructor() {
-    this.x = random(displayWidth);
-    this.y = displayHeight;
+  constructor(w, h) {
+    this.x = random(w);
+    this.y = h;
     this.speedY = random(-3, -1);
   }
 
-  move() {
+  move(w, h) {
     this.x += random(-5, 5);
     this.y += this.speedY;
 
     if (this.isOffScreen()) {
-      this.x = random(displayWidth);
-      this.y = displayHeight;
+      this.x = random(w);
+      this.y = h;
       this.speedY = random(-3, -1);
     }
   }
@@ -772,13 +763,13 @@ class Hearts {
 
 //花火
 class Fire {
-  constructor() {
+  constructor(w,h) {
     this.p1 = 0
     this.p2 = 0
     this.lifeSpan = 100;
     this.ang = random(10);
     this.aStep = random(-1, 1) * 0.001;
-    this.sets();
+    this.sets(w,h);
   }
 
   show() {
@@ -800,7 +791,7 @@ class Fire {
     lay.pop();
   }
 
-  move() {
+  move(w, h) {
     this.life--;
 
     if (this.lifeSpan > this.life && this.life > 0) {
@@ -811,39 +802,39 @@ class Fire {
       this.ang += this.aStep;
     }
     if (this.life == 0) {
-      this.sets();
+      this.sets(w, h);
     }
   }
 
-  sets() {
+  sets(w, h) {
     this.life = this.lifeSpan + int(random(100));
     this.num = int(random(8, 20));
-    this.x = random(-0.1, 1.1) * displayWidth;
-    this.y = random(-0.1, 1.1) * displayHeight;
+    this.x = random(-0.1, 1.1) * w;
+    this.y = random(-0.1, 1.1) * h;
     this.s = random(120, 250);
     this.col = random(colors);
   }
 
-  run() {
+  run(w,h) {
     if (this.life < this.lifeSpan) this.show();
-    this.move();
+    this.move(w,h);
   }
 }
 
 //桜
 class Sakura {
-  constructor() {
+  constructor(w,h) {
     var n = 4;
     var A, md, r, R, x, y;
 
-    this.xDef = random(displayWidth);
+    this.xDef = random(w);
 
     this.xAmp = random(50, 100);
     this.xSpeed = random(1, 2);
     this.xTheta = random(360);
 
     this.ox = this.xDef + this.xAmp * sin(radians(this.xTheta));
-    this.oy = random(displayHeight);
+    this.oy = random(h);
     this.rotateT = random(360);
     this.size = random(10, 30);
 
@@ -879,7 +870,7 @@ class Sakura {
       lay.pop();
     };
 
-    this.move = function () {
+    this.move = function (h) {
       this.ox = this.xDef + this.xAmp * sin(radians(this.xTheta));
       this.xTheta += this.xSpeed;
 
@@ -887,7 +878,7 @@ class Sakura {
       this.sizeYT += this.sizeYSpeed;
       this.sizeYScale = abs(sin(radians(this.sizeYT)));
 
-      if (this.oy > displayHeight + this.size) {
+      if (this.oy > h + this.size) {
         this.oy = -this.size;
       }
     };
@@ -908,100 +899,37 @@ function pointinit() {
     dots[i] = new ShowObj();
   }
 }
-function ShowObj() {
-}
-ShowObj.prototype.initMe = function () {
-  this.x = random(0, displayWidth);
-  this.y = random(0, displayHeight);
-  this.imgCol = floor(random(0, 5));
-  this.sizeScale = random(0.01, 0.05);
-  this.rotAngle = 0;
-  this.rotSpeed = random(-3, 3);
-  this.speed = random(0.5, 2);
-  this.xnoise = random(100);
-}
-ShowObj.prototype.updateMe = function () {
-  this.x = this.x + noise(this.xnoise) * 2 - 1;
-  this.xnoise = this.xnoise + noiseval;
-  this.y = this.y + this.speed;
-  if (this.y > displayHeight + 100) {
-    this.initMe();
-    this.y = -100;
+class ShowObj {
+  constructor() {
   }
-  this.rotAngle += this.rotSpeed;
-}
-ShowObj.prototype.drawMe = function () {
-  lay.push();
-  lay.translate(this.x, this.y);
-  lay.rotate(radians(this.rotAngle));
-  lay.scale(this.sizeScale, this.sizeScale);
-  //tint(255, 30);
-  lay.image(mus[this.imgCol], -(mus[this.imgCol].width / 2), -(mus[this.imgCol].height / 2));
-  lay.pop();
-}
-
-//炎
-class Particle {
-  constructor(position) {
-    //加速
-    this.acceleration = createVector(0, -0.65);
-    this.velocity = createVector(random(-0.3, 0.3), random(-0.3, 0.1));
-    this.position = position.copy();
-    //薄さ
-    this.lifespan = 155;
-    this.green = 220;
-    this.size = 50;
+  initMe() {
+    this.x = random(0, displayWidth);
+    this.y = random(0, displayHeight);
+    this.imgCol = floor(random(0, 4));
+    this.sizeScale = random(0.01, 0.05);
+    this.rotAngle = 0;
+    this.rotSpeed = random(-3, 3);
+    this.speed = random(0.5, 2);
+    this.xnoise = random(100);
   }
-  run() {
-    this.update();
-    this.display();
+  updateMe() {
+    this.x = this.x + noise(this.xnoise) * 2 - 1;
+    this.xnoise = this.xnoise + noiseval;
+    this.y = this.y + this.speed;
+    if (this.y > displayHeight + 100) {
+      this.initMe();
+      this.y = -100;
+    }
+    this.rotAngle += this.rotSpeed;
   }
-  // Method to update position
-  update() {
-    this.velocity.add(this.acceleration);
-    this.position.add(this.velocity);
-    this.lifespan -= 5;
-    this.green -= 4;
-    this.size -= 2;
-  }
-  // Method to display
-  display() {
+  drawMe() {
     lay.push();
-    lay.drawingContext.shadowBlur = 45;
-    lay.drawingContext.shadowColor = color(255, this.green, 20);
-    lay.stroke(255, this.green, 70, this.lifespan);
-    lay.strokeWeight(1);
-    lay.fill(255, this.green, 70, this.lifespan);
-    lay.ellipse(this.position.x, this.position.y, this.size, this.size);
+    lay.translate(this.x, this.y);
+    lay.rotate(radians(this.rotAngle));
+    lay.scale(this.sizeScale, this.sizeScale);
+    //tint(255, 30);
+    lay.image(mus[this.imgCol], -(mus[this.imgCol].width / 2), -(mus[this.imgCol].height / 2));
     lay.pop();
   }
-  // Is the particle still useful?
-  isDead() {
-    return this.lifespan < 0;
-  }
-  leadDead() {
-    return this.size < 0;
-  }
 }
 
-class ParticleSystem {
-  constructor(position) {
-    this.origin = position.copy();
-    this.particles = [];
-  }
-  addParticle() {
-    this.particles.push(new Particle(this.origin));
-  }
-  run() {
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      let p = this.particles[i];
-      p.run();
-      if (p.isDead()) {
-        this.particles.splice(i, 1);
-      }
-      if (p.leadDead()) {
-        this.particles.splice(i, 1);
-      }
-    }
-  }
-}
