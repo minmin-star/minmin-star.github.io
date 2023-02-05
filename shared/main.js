@@ -174,10 +174,9 @@ function preload() {
   Two_White = loadImage("./note/two_white.png");
   Two_Yellow = loadImage("./note/two_yellow.png");
 }
-/////////////////////////////////////////固定///////////////////////////////////////////////
+//setup
 async function setup() {
 
-  //デフォルトのキャンバス消去
   Canvas = createCanvas(320, 180);
   Canvas.parent(cav);
   Canvas.style("display", "none");
@@ -461,7 +460,7 @@ function draw() {
   if (enjoy_flag == 7) {
     effect.push();
     effect.background(255, 255, 255, random(100))
-    effect.rect(0, 0, windowWidth, windowHeight);
+    effect.rect(0, 0, layer_enjoy.clientWidth, layer_enjoy.clientHeight);
     effect.pop();
   }
 
