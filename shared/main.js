@@ -518,7 +518,7 @@ function landmark_get() {
     hand.push([x, y, z]);
   }
   //一次元配列に変換
-  handpose_one = handpose_sotai.reduce((acc, elem) => {
+  handpose_one = hand.reduce((acc, elem) => {
     return acc.concat(elem)
   })
   hand.length = 0;
