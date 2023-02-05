@@ -14,11 +14,8 @@ $(function () {
   //ページの読み込みが完了してなくても5秒後にアニメーションを非表示にする
   setTimeout(function () {
     $('.loader-bg').fadeOut(700);
-  }, 5000);
+  }, 20000);
 });
-
-//色初期化
-let r = 255, g = 255, b = 255;
 
 //初期化
 const Peer = window.Peer;
@@ -42,8 +39,13 @@ let enjoy_id = poseNUM;
 
 //モデル
 let model;
-const MODEL_URL = '../model/model.json';
-let id, result;
+const MODEL_URL = './model/model.json';
+let id;
+
+//モデル
+let history;
+const HISTORY_URL = "./history/model.json";
+let history_id;
 
 //HTMLのID
 const joinTrigger = document.getElementById('js-join-trigger');
@@ -90,7 +92,7 @@ const isFlipped = true;
 
 //ハート
 var heart = [];
-var NUM_OF_HEARTS = 15;
+var NUM_OF_HEARTS = 10;
 
 //花火
 let fw = [];
@@ -98,7 +100,7 @@ let colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ff00ff', 
 var NUM_OF_FIRE = 10;
 
 //桜
-var sakuraNum = 100;
+var sakuraNum = 40;
 var fubuki = [];
 var clr = [];
 
@@ -110,6 +112,27 @@ var noiseval = 0.01;
 
 //炎
 let system = [];
+
+class Queue{
+  constructor(){
+    this.items = [];
+  }
+  //いれる
+  enqueue(element){
+    return this.items.push(element);
+  }
+  //出す
+  dequeue(){
+    if(this.items.length > 0){  
+      return this.items.shift();
+    }
+  }
+  //さいず
+  size(){
+    return this.items.length;
+  }
+}
+let queue = new Queue();
 
 //ランドマーク検出
 function onHandsResults(results) {
@@ -134,9 +157,8 @@ hands.onResults(onHandsResults);
 
 //画像
 let imagePNG;
-let One_Red, One_White, One_Blue, One_Green, One_Yellow;
-let Two_Red, Two_White, Two_Blue, Two_Green, Two_Yellow;
-let clapImage;
+let One_White, One_Blue, One_Green;
+let Two_Red, Two_White, Two_Yellow;
 
 let t = 0;
 
@@ -144,19 +166,13 @@ let t = 0;
 function preload() {
   imagePNG = loadImage("./heart.png");
 
-  One_Red = loadImage("./note/one_red.png");
   One_White = loadImage("./note/one_white.png");
   One_Blue = loadImage("./note/one_blue.png");
   One_Green = loadImage("./note/one_green.png");
-  One_Yellow = loadImage("./note/one_yellow.png");
 
   Two_Red = loadImage("./note/two_red.png");
   Two_White = loadImage("./note/two_white.png");
-  Two_Blue = loadImage("./note/two_blue.png");
-  Two_Green = loadImage("./note/two_green.png");
   Two_Yellow = loadImage("./note/two_yellow.png");
-
-  clapImage = loadImage("./img/clap.png")
 }
 /////////////////////////////////////////固定///////////////////////////////////////////////
 async function setup() {
@@ -396,26 +412,28 @@ async function setup() {
   clr.push(color(246, 204, 252, 150));
 
   //音符
-  mus = [One_Red, One_White, One_Blue, One_Green, One_Yellow, Two_Red, Two_White, Two_Green, Two_Blue, Two_Yellow];
+  mus = [One_White, One_Blue, One_Green, Two_Red, Two_White, Two_Yellow];
   pointinit();
   for (var i = 0; i < count; i++) {
     dots[i].initMe();
   }
   //炎
-  for (let i = 0; i < width; i = i + 100) {
-    system.push(new ParticleSystem(createVector(i, 180)));
+  for (let i = 0; i < displayWidth; i = i + 20) {
+    system.push(new ParticleSystem(createVector(i, displayHeight)));
   }
 
   //モデル読み込み
   model = await tf.loadLayersModel(MODEL_URL);
+  history = await tf.loadLayersModel(HISTORY_URL);
+
 }
 
 /////////////////////////////////////ループ//////////////////////////////////////////
 function draw() {
-  Canvas.clear();
-  Canvas.background("rgba(0, 0, 0, 0.2)");
-  lay.background(200);
 
+  //背景色
+  lay.background(200);
+  //盛り上がりエフェクト消去
   effect.clear();
 
   //サイズ変更
@@ -449,12 +467,13 @@ function draw() {
 
   drawHands();
   //キャンバスのストリーム(相手に送信する用)
-  myStream = lay.elt.captureStream(frameRate());
+  //myStream = lay.elt.captureStream(frameRate());
 
 }
 
-//ハンドジェスチャ認識
+//ハンドポーズ認識
 function hand_pose(landmark) {
+  let result;
   const example = tf.tidy(() => {
     const ex = tf.tensor(landmark, [1, 63]);
     const prediction = model.predict(ex);
@@ -467,32 +486,42 @@ function hand_pose(landmark) {
   return result;
 }
 
+//ハンドジェスチャ認識
+function hand_gesture(landmark){
+  let result;
+  const example = tf.tidy ( () =>{
+    const ex = tf.tensor(landmark, [1,48])
+    const prediction = history.predict(ex);
+
+    result = maxIndex(prediction.dataSync());
+
+    return result;
+  })
+  return result;
+}
+
 //最大値のインデックスを取る関数
 function maxIndex(a) {
   return a.indexOf(Math.max(...a));
 }
 
 //ランドマーク取得
-function landmark_get(landmark) {
-  let handpose_sotai = [];
+function landmark_get() {
+  let hand = [];
   let handpose_one = [];
-  let handpose_list = [];
 
-  //取得したランドマーク保存
-  for (var i = 0; i < 21; i++) {
-    landmark.push([int(keypointsHand[0][i].x * Canvas.width), int(keypointsHand[0][i].y * Canvas.height), keypointsHand[0][i].z]);
-  }
   //相対座標に変換
   for (var i = 0; i < 21; i++) {
-    var x = landmark[i][0] - landmark[0][0];
-    var y = landmark[i][1] - landmark[0][1];
-    var z = landmark[i][2] - landmark[0][2];
-    handpose_sotai.push([x, y, z]);
+    var x = ( keypointsHand[0][i].x - keypointsHand[0][0].x )*displayWidth;
+    var y = ( keypointsHand[0][i].y - keypointsHand[0][0].y )*displayHeight;
+    var z = keypointsHand[0][i].z - keypointsHand[0][0].z;
+    hand.push([x, y, z]);
   }
   //一次元配列に変換
   handpose_one = handpose_sotai.reduce((acc, elem) => {
     return acc.concat(elem)
   })
+  hand.length = 0;
   //絶対値に変換
   let abs_handpose = [];
   for (var i = 0; i < handpose_one.length; i++) {
@@ -502,9 +531,38 @@ function landmark_get(landmark) {
   var max_value = Math.max.apply(null, abs_handpose);
   //正規化
   for (var i = 0; i < handpose_one.length; i++) {
-    handpose_list.push(handpose_one[i] / max_value);
+    hand.push(handpose_one[i] / max_value);
   }
-  return handpose_list;
+  return hand;
+}
+
+//座標取得
+function history_get(point){
+  if( 16 <= queue.size() ){
+    queue.dequeue();
+    queue.enqueue(point);
+
+    let newpoint = [];
+
+    for( let i = 0; i < queue.size(); i++){
+      var x = (queue.items[i].x - queue.items[0].x)/displayWidth;
+      var y = (queue.items[i].y - queue.items[0].y)/displayHeight;
+      var z = queue.items[i].z - queue.items[0].z;
+      newpoint.push([x,y,z]);
+    }
+    let onepoint = [];
+    
+    onepoint = newpoint.reduce( (acc, elem)=>{
+      return acc.concat(elem)
+    })
+
+    return onepoint;
+
+  }
+  else{
+    queue.enqueue(point);
+    return queue;
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------//
@@ -519,7 +577,7 @@ function drawHands() {
     }
   }
   //片手だけの動作
-  if (keypointsHand.length == 1) {
+  else if (keypointsHand.length == 1) {
 
     //指先の配列
     const tip = {
@@ -529,64 +587,32 @@ function drawHands() {
       ring: keypointsHand[0][16],
       pinky: keypointsHand[0][20],
     };
-    //根元の配列
-    const mcp = {
-      middle: keypointsHand[0][9],
-      pinky: keypointsHand[0][17],
-    };
-    /*
-      //パーにしている時
-      //光る円(ペンライト)
-      if (flag_one.thumb == true && flag_one.index == true && flag_one.middle == true && flag_one.ring == true && flag_one.pinky == true) {
 
-        lay.clear();
-
-        //拍手した時
-        if (palmarea.wt > 0.18) {
-          penlight(tip.index, displayWidth, displayHeight);
-        }
-        if (palmarea.wt < 0.10) {
-          if (frameCount % 7 == 0 || frameCount % 7 == 1 || frameCount % 7 == 2) {
-
-            lay.push();
-            lay.rotate(PI / 4);
-            lay.translate(displayWidth / 3, -displayHeight * 4 / 3);
-            efCurve(random() * (displayWidth / 2), random() * (displayHeight / 2), random() * (100 - 40) + 40, random() * (40 - 10) + 10, 5);
-            //efThree(random()*(displayWidth/2),random()*(displayHeight/2), random()*(100-40)+40, random()*(40-20)+20);
-            lay.pop()
-
-            lay.push()
-            lay.rotate(5 * PI / 4);
-            lay.translate(-(displayWidth * 3 / 4), -displayHeight * 3 / 4);
-            efCurve(random() * (displayWidth / 2), random() * (displayHeight / 2), random() * (100 - 40) + 40, random() * (40 - 10) + 10, 5);
-            //efThree(random()*(displayWidth/2),random()*(displayHeight/2), random()*(100-40)+40, random()*(40-20)+20);
-            lay.pop();
-
-            lay.push();
-            lay.image(
-              clapImage,
-              random() * displayWidth,
-              random() * displayHeight,
-              imagePNG.width * 0.10,
-              imagePNG.height * 0.10
-            );
-            lay.pop();
-          }
-        }   
-         
-    }
-    */
-    let handpose = [];
     let handpose_result = [];
-
     //認識のid取得
-    handpose_result = landmark_get(handpose);
+    handpose_result = landmark_get();
     id = hand_pose(handpose_result);
-
+    console.log(id)
     //パーの時
     if (id == 0 || id == poseNUM) {
       lay.clear();
-      penlight(tip.index, displayWidth, displayHeight);
+      let history_result = [];
+      history_result = history_get(keypointsHand[0][12]);
+      if( history_result.length == 16*3 ){
+        history_id = hand_gesture(history_result);
+
+        if( history_id == 1){
+
+        }
+        else if( history_id == 2){
+          penlight(tip.index, displayWidth, displayHeight);
+        }
+        else if( history_id == 3){
+        }
+        else{
+
+        }
+      }
     }
     //グーの時
     else if (id == 1 || id == 1+poseNUM) {
@@ -648,9 +674,8 @@ function drawHands() {
       room.send(String(enjoy_id));
       localStorage.setItem(peer.id, enjoy_id)
     }
-
   }
-
+  else{}
 }
 
 //---------------------------------------------------------------------------------------------------------------------------------------//
@@ -664,36 +689,6 @@ function drawTwinkle(x, y, r) {
     lay.vertex(r * pow(cos(theta), 3), r * 1.4 * pow(sin(theta), 3));
   }
   lay.endShape(CLOSE)
-  lay.pop();
-}
-//効果線-曲線
-function efCurve(x0, y0, w, h, a) {
-
-  lay.push();
-
-  lay.noFill();
-  lay.strokeWeight(3);
-  lay.stroke(255);
-
-  lay.bezier(x0, y0 + h, x0 + a, y0 + h, x0 + w / 3, y0 + h / 5 + a, x0 + w / 3, y0 + h / 5);
-  lay.bezier(x0 + w / 3, y0 + h / 5, x0 + w / 3 + a, y0 + h / 5 + a, x0 + w * 2 / 3 - a, y0 + h / 5 + a, x0 + w * 2 / 3, y0 + h / 5);
-  lay.bezier(x0 + w * 2 / 3, y0 + h / 5, x0 + w * 2 / 3, y0 + h / 5 + a, x0 + w - a, y0 + h, x0 + w, y0 + h);
-
-  lay.pop();
-}
-//効果線-直線
-function efThree(x0, y0, w, h) {
-
-  lay.push();
-
-  lay.noFill();
-  lay.strokeWeight(3);
-  lay.stroke(255);
-
-  lay.line(x0, y0 + h / 2, x0 + w / 4, y0 + h);
-  lay.line(x0 + w / 2, y0, x0 + w / 2, y0 + h);
-  lay.line(x0 + w, y0 + h / 2, x0 + 3 * w / 4, y0 + h);
-
   lay.pop();
 }
 
@@ -714,32 +709,13 @@ function Star(x, y, r) {
 //ペンライトの動き
 function penlight(position, w, h) {
   lay.push();
-  lay.fill(0, 20);
+  lay.fill(0, 50);
   lay.rect(0, 0, w, h);
   lay.drawingContext.shadowBlur = 30;
-  lay.drawingContext.shadowColor = color(r, g, b)
+  lay.drawingContext.shadowColor = color(255, 255, 255)
   lay.noStroke();
   lay.fill(255);
   lay.ellipse(position.x * w, position.y * h, 10);
-  lay.pop();
-}
-
-function penlight_remain(position) {
-  lay.push();
-  let T, A, R;
-  //drawingContext.shadowBlur = 25;
-  //drawingContext.shadowColor= color(r, g, b)
-  //fill(255);
-  t += .001
-  lay.colorMode(HSB);
-  lay.blendMode(BLEND);
-  lay.background(0, .1);
-  lay.noStroke();
-  lay.blendMode(ADD);
-  for (let a = 0; a < 3; a += .005) {
-    lay.fill(a * 60, g, b, T = tan(a * 4 + t * 9) / 2);
-    lay.circle(cos(R = a * a - t) * 360 * sin(A = a + t * 3 + sin(R + t)) + 360, sin(R) * 360 * cos(A) + 360, 4 / T);
-  }
   lay.pop();
 }
 
@@ -934,17 +910,11 @@ function pointinit() {
   }
 }
 function ShowObj() {
-  var x, y;
-  var sizeScale;
-  var rotAngle;
-  var rotSpeed;
-  var speed, xnoise;
-  var imgCol;
 }
 ShowObj.prototype.initMe = function () {
   this.x = random(0, displayWidth);
   this.y = random(0, displayHeight);
-  this.imgCol = floor(random(0, 10));
+  this.imgCol = floor(random(0, 5));
   this.sizeScale = random(0.01, 0.05);
   this.rotAngle = 0;
   this.rotSpeed = random(-3, 3);
@@ -981,7 +951,7 @@ class Particle {
     //薄さ
     this.lifespan = 155;
     this.green = 220;
-    this.size = 90;
+    this.size = 50;
   }
   run() {
     this.update();
@@ -993,7 +963,7 @@ class Particle {
     this.position.add(this.velocity);
     this.lifespan -= 5;
     this.green -= 4;
-    this.size -= 3;
+    this.size -= 2;
   }
   // Method to display
   display() {

@@ -1,4 +1,3 @@
-/* normalize */
 
 * {
   -ms-box-sizing: border-box;
@@ -15,7 +14,6 @@ body {
   margin: 0;
 }
 
-/* ローディング画面背景 */
 .loader-bg {
   width: 100vw;
   height: 100vh;
@@ -29,7 +27,6 @@ body {
   align-items: center;
 }
 
-/* ローディングアニメーション */
 .loader,
 .loader:before,
 .loader:after {
@@ -98,8 +95,6 @@ body {
   }
 }
 
-
-/* global styles */
 video {
   background-color: #111;
   width: 100%;
@@ -194,7 +189,6 @@ video {
 
 .legend:after {
   content: "";
-  background-image: url(http://simpleicon.com/wp-content/uploads/multy-user.png);
   background-size: 100px 100px;
   background-repeat: no-repeat;
   background-position: 152px -16px;
@@ -293,7 +287,7 @@ video {
 .room .remote-streams {
   display: grid;
   width: 100%;
-  grid-template-columns: 25% 25% 25% 25%;
+  grid-template-columns: 33% 33% 33%;
   grid-template-rows: 1fr 1fr 1fr;
 }
 
