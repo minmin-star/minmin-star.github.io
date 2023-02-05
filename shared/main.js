@@ -79,15 +79,6 @@ const localVideo = document.getElementById("videoTag"),
   };
 localVideo.style.display = "none";
 
-navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
-  localVideo.srcObject = stream;
-  localVideo.onloadedmetadata = function (e) {
-    localVideo.play();
-  };
-})
-  .catch(function (err) {
-    console.log(err.name + ": " + err.message);
-  });
 
 //手の関節位置
 let keypointsHand = [];
@@ -194,6 +185,17 @@ async function setup() {
     debug: 3,
   }));
 
+  navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+    localVideo.srcObject = stream;
+    localVideo.onloadedmetadata = function (e) {
+      localVideo.play();
+  
+      myStream = lay.elt.captureStream(30);
+    };
+  })
+    .catch(function (err) {
+      console.log(err.name + ": " + err.message);
+    });
   // ログイン(JOIN)ボタンを押したとき
   joinTrigger.addEventListener('click', () => {
 
@@ -468,7 +470,6 @@ function draw() {
     effect.pop();
   }
 
-  myStream = lay.elt.captureStream(35);
 
 }
 
