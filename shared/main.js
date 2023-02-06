@@ -863,8 +863,8 @@ class Hearts {
       imageHeart,
       this.x,
       this.y,
-      imageHeart.width * 0.04,
-      imageHeart.height * 0.04
+      imageHeart.width * 0.07,
+      imageHeart.height * 0.07
     );
     effect.pop();
   }
