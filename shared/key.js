@@ -1,1 +1,1 @@
-window.__SKYWAY_KEY__ = 'YOUR_API';
+window.__SKYWAY_KEY__ = '21f4edfb-1c39-4276-8626-9694a13a2314;
